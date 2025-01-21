@@ -9,27 +9,27 @@ export const GitLabAuthorSchema = z.object({
 
 // Repository related schemas
 export const GitLabOwnerSchema = z.object({
-  username: z.string(), // Changed from login to match GitLab API
+  username: z.string(),
   id: z.number(),
   avatar_url: z.string(),
-  web_url: z.string(), // Changed from html_url to match GitLab API
-  name: z.string(), // Added as GitLab includes full name
-  state: z.string() // Added as GitLab includes user state
+  web_url: z.string(),
+  name: z.string(),
+  state: z.string()
 });
 
 export const GitLabRepositorySchema = z.object({
   id: z.number(),
   name: z.string(),
-  path_with_namespace: z.string(), // Changed from full_name to match GitLab API
-  visibility: z.string(), // Changed from private to match GitLab API
+  path_with_namespace: z.string(),
+  visibility: z.string(),
   owner: GitLabOwnerSchema,
-  web_url: z.string(), // Changed from html_url to match GitLab API
+  web_url: z.string(),
   description: z.string().nullable(),
-  fork: z.boolean(),
-  ssh_url_to_repo: z.string(), // Changed from ssh_url to match GitLab API
-  http_url_to_repo: z.string(), // Changed from clone_url to match GitLab API
+  fork: z.boolean().optional(), // Made optional for GitLab 17.7 compatibility
+  ssh_url_to_repo: z.string(),
+  http_url_to_repo: z.string(),
   created_at: z.string(),
-  last_activity_at: z.string(), // Changed from updated_at to match GitLab API
+  last_activity_at: z.string(),
   default_branch: z.string()
 });
 

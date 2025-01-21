@@ -8,13 +8,14 @@
   "bugs": "https://github.com/modelcontextprotocol/servers/issues",
   "type": "module",
   "bin": {
-    "mcp-server-memory": "dist/index.js"
+    "mcp-server-memory": "lib/index.js"
   },
   "files": [
-    "dist"
+    "lib"
   ],
   "scripts": {
-    "build": "tsc && shx chmod +x dist/*.js",
+    "clean": "rm -rf lib",
+    "build": "npm run clean && tsc && mkdir -p lib && shx chmod +x lib/*.js",
     "prepare": "npm run build",
     "watch": "tsc --watch"
   },

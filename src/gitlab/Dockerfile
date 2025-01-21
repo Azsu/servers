@@ -1,21 +1,27 @@
-FROM node:22.12-alpine as builder
+FROM node:22.12-alpine AS builder
 
-COPY src/gitlab /app
-COPY tsconfig.json /tsconfig.json
+WORKDIR /app/servers/src/gitlab
 
-WORKDIR /app
+COPY package*.json* ./
+COPY tsconfig.json ./
 
-RUN --mount=type=cache,target=/root/.npm npm install
+RUN npm install
 
-RUN --mount=type=cache,target=/root/.npm-production npm ci --ignore-scripts --omit-dev
+COPY . .
+
+RUN npm install --save-dev @types/node-fetch
+
+RUN npm run build
+
 
 FROM node:22.12-alpine AS release
 
 WORKDIR /app
 
-COPY --from=builder /app/dist /app/dist
-COPY --from=builder /app/package.json /app/package.json
-COPY --from=builder /app/package-lock.json /app/package-lock.json
+# Modify COPY instructions to be more flexible
+COPY --from=builder /app/servers/src/gitlab/dist ./dist  || true
+COPY --from=builder /app/servers/src/gitlab/package.json ./
+COPY --from=builder /app/servers/src/gitlab/package-lock.json* ./
 
 ENV NODE_ENV=production
 

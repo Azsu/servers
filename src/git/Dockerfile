@@ -27,9 +27,12 @@ FROM python:3.12-slim-bookworm
 RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
- 
+
 COPY --from=uv /root/.local /root/.local
 COPY --from=uv --chown=app:app /app/.venv /app/.venv
+
+RUN git config --system --add safe.directory '*' && \
+    chmod 644 /etc/gitconfig
 
 # Place executables in the environment at the front of the path
 ENV PATH="/app/.venv/bin:$PATH"

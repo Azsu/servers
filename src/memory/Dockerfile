@@ -1,24 +1,56 @@
-FROM node:22.12-alpine as builder
-
-COPY src/memory /app
-COPY tsconfig.json /tsconfig.json
+FROM node:22.12-alpine AS builder
 
 WORKDIR /app
 
-RUN --mount=type=cache,target=/root/.npm npm install
+# Copy workspace configuration
+COPY package*.json ./
+COPY tsconfig.json ./
 
-RUN --mount=type=cache,target=/root/.npm-production npm ci --ignore-scripts --omit-dev
+# Copy all source directories (needed for workspace)
+COPY src ./src
+
+# Install dependencies and update package-lock.json
+RUN npm install && \
+    cd src/memory && \
+    npm install @modelcontextprotocol/sdk@1.0.1 && \
+    cd ../.. && \
+    npm install --package-lock-only
+
+# Clean and build the memory server
+WORKDIR /app/src/memory
+RUN npm run clean && npm run build
 
 FROM node:22-alpine AS release
 
-COPY --from=builder /app/dist /app/dist
-COPY --from=builder /app/package.json /app/package.json
-COPY --from=builder /app/package-lock.json /app/package-lock.json
+# Create non-root user
+RUN addgroup -S vscode && \
+    adduser -S vscode -G vscode
 
-ENV NODE_ENV=production
-
+# Create directory for the application
 WORKDIR /app
 
-RUN npm ci --ignore-scripts --omit-dev
+# Copy built application and dependencies
+COPY --from=builder /app/src/memory/lib ./lib
+COPY --from=builder /app/src/memory/package*.json ./
+COPY --from=builder /app/package-lock.json ./
 
-ENTRYPOINT ["node", "dist/index.js"]
+# Install only runtime dependencies, skip prepare scripts
+RUN npm install --omit=dev --ignore-scripts && \
+    npm cache clean --force
+
+# Set up environment
+ENV NODE_ENV=production
+ENV MCP_MEMORY_PATH=/app/data/memory.jsonl
+
+# Create the volume and ensure proper permissions
+RUN mkdir -p /app/data && \
+    chown vscode:vscode /app/data && \
+    chmod 775 /app/data
+
+# Define the volume for /app/data
+VOLUME ["/app/data"]
+
+# Switch to non-root user
+USER vscode
+
+ENTRYPOINT ["node", "lib/index.js"]

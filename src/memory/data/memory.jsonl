@@ -1,0 +1,6 @@
+{"type":"entity","name":"Alice Smith","entityType":"Person","observations":["Software engineer working in tech industry","Lives in San Francisco","Graduated from Stanford University"]}
+{"type":"entity","name":"TechCorp","entityType":"Company","observations":["Software development company","Founded in 2015","Specializes in AI and machine learning"]}
+{"type":"entity","name":"Machine Learning Project","entityType":"Project","observations":["Ongoing AI research initiative","Started in 2022","Focuses on natural language processing"]}
+{"type":"relation","from":"Alice Smith","to":"TechCorp","relationType":"works at"}
+{"type":"relation","from":"Alice Smith","to":"Machine Learning Project","relationType":"leads"}
+{"type":"relation","from":"TechCorp","to":"Machine Learning Project","relationType":"sponsors"}

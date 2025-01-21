@@ -10,45 +10,45 @@ import fetch from "node-fetch";
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import {
-  GitLabForkSchema,
-  GitLabReferenceSchema,
-  GitLabRepositorySchema,
-  GitLabIssueSchema,
-  GitLabMergeRequestSchema,
+  CreateBranchOptionsSchema,
+  CreateBranchSchema,
+  CreateIssueOptionsSchema,
+  CreateIssueSchema,
+  CreateMergeRequestOptionsSchema,
+  CreateMergeRequestSchema,
+  CreateOrUpdateFileSchema,
+  CreateRepositoryOptionsSchema,
+  CreateRepositorySchema,
+  ForkRepositorySchema,
+  GetFileContentsSchema,
+  GitLabCommitSchema,
   GitLabContentSchema,
   GitLabCreateUpdateFileResponseSchema,
+  GitLabForkSchema,
+  GitLabIssueSchema,
+  GitLabMergeRequestSchema,
+  GitLabReferenceSchema,
+  GitLabRepositorySchema,
   GitLabSearchResponseSchema,
   GitLabTreeSchema,
-  GitLabCommitSchema,
-  CreateRepositoryOptionsSchema,
-  CreateIssueOptionsSchema,
-  CreateMergeRequestOptionsSchema,
-  CreateBranchOptionsSchema,
-  CreateOrUpdateFileSchema,
-  SearchRepositoriesSchema,
-  CreateRepositorySchema,
-  GetFileContentsSchema,
   PushFilesSchema,
-  CreateIssueSchema,
-  CreateMergeRequestSchema,
-  ForkRepositorySchema,
-  CreateBranchSchema,
-  type GitLabFork,
-  type GitLabReference,
-  type GitLabRepository,
-  type GitLabIssue,
-  type GitLabMergeRequest,
+  SearchRepositoriesSchema,
+  type FileOperation,
+  type GitLabCommit,
   type GitLabContent,
   type GitLabCreateUpdateFileResponse,
+  type GitLabFork,
+  type GitLabIssue,
+  type GitLabMergeRequest,
+  type GitLabReference,
+  type GitLabRepository,
   type GitLabSearchResponse,
   type GitLabTree,
-  type GitLabCommit,
-  type FileOperation,
 } from './schemas.js';
 
 const server = new Server({
   name: "gitlab-mcp-server",
-  version: "0.5.1",
+  version: "2024-11-05",  // Updated from 0.5.1 to match current protocol version
 }, {
   capabilities: {
     tools: {}
@@ -151,7 +151,7 @@ async function getFileContents(
   }
 
   const data = GitLabContentSchema.parse(await response.json());
-  
+
   if (!Array.isArray(data) && data.content) {
     data.content = Buffer.from(data.content, 'base64').toString('utf8');
   }

@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/isr/bin/env node
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -7,13 +7,13 @@ import {
   ListToolsRequestSchema,
   ToolSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+import { createTwoFilesPatch } from 'diff';
 import fs from "fs/promises";
-import path from "path";
+import { minimatch } from 'minimatch';
 import os from 'os';
+import path from "path";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { diffLines, createTwoFilesPatch } from 'diff';
-import { minimatch } from 'minimatch';
 
 // Command line argument parsing
 const args = process.argv.slice(2);
@@ -481,14 +481,85 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case "write_file": {
         const parsed = WriteFileArgsSchema.safeParse(args);
-        if (!parsed.success) {
+        if (!parsed.success)
+        {
           throw new Error(`Invalid arguments for write_file: ${parsed.error}`);
         }
+
+        // Placeholder detection
+        const placeholderPatterns = [
+          /^\[.*content.*\]$/i,
+          /placeholder/i,
+          /todo: replace/i,
+          /^[^a-zA-Z0-9]+$/  // Catches strings with only special characters
+        ];
+
+        const content = parsed.data.content;
+        if (placeholderPatterns.some(pattern => pattern.test(content.trim())))
+        {
+          const error = new Error('Detected potential placeholder content');
+          error.message = `
+      Write Operation Failed: Placeholder Content Detected
+
+      Instructions for correct file write:
+      1. Ensure you have the complete, original file content
+      2. Verify the content is not a placeholder or incomplete
+      3. Use the full, exact content when writing the file
+      4. Double-check that no content is accidentally truncated
+
+      Detected problematic content pattern: ${content.slice(0, 100)}...
+
+      - **edit_file usage:**
+      - Make selective edits using advanced pattern matching and formatting
+      - Features:
+          - Line-based and multi-line content matching
+          - Whitespace normalization with indentation preservation
+          - Fuzzy matching with confidence scoring
+          - Multiple simultaneous edits with correct positioning
+          - Indentation style detection and preservation
+          - Git-style diff output with context
+          - Preview changes with dry run mode
+          - Failed match debugging with confidence scores
+      - Inputs:
+          - path (string): File to edit
+          - edits (array): List of edit operations
+            - oldText (string): Text to search for (can be substring)
+            - newText (string): Text to replace with
+          - dryRun (boolean): Preview changes without applying (default: false)
+          - options (object): Optional formatting settings
+            - preserveIndentation (boolean): Keep existing indentation (default: true)
+            - normalizeWhitespace (boolean): Normalize spaces while preserving structure (default: true)
+            - partialMatch (boolean): Enable fuzzy matching (default: true)
+      - Returns detailed diff and match information for dry runs, otherwise applies changes
+      - Best Practice: ALWAYS use dryRun first to preview changes before applying them
+      `;
+          throw error;
+        }
+
         const validPath = await validatePath(parsed.data.path);
-        await fs.writeFile(validPath, parsed.data.content, "utf-8");
-        return {
-          content: [{ type: "text", text: `Successfully wrote to ${parsed.data.path}` }],
-        };
+
+        // Robust file writing with verification
+        try
+        {
+          await fs.writeFile(validPath, content, {
+            encoding: 'utf-8',
+            flag: 'w'  // Write and truncate
+          });
+
+          // Verify content was written correctly
+          const verifyContent = await fs.readFile(validPath, 'utf-8');
+          if (verifyContent !== content)
+          {
+            throw new Error('File content verification failed');
+          }
+
+          return {
+            content: [{ type: "text", text: `Successfully wrote to ${parsed.data.path}` }],
+          };
+        } catch (error)
+        {
+          throw error;
+        }
       }
 
       case "edit_file": {
