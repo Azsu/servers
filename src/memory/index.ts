@@ -103,34 +103,34 @@ interface CareerBreak {
   media?: string[]; // Array of media links or descriptions related to the career break
 }
 
-type SkillCategory = 
-  | "Technical" 
-  | "Programming Language" 
-  | "Framework" 
-  | "Platform" 
-  | "Protocol" 
-  | "Methodology" 
-  | "Domain Knowledge" 
+type SkillCategory =
+  | "Technical"
+  | "Programming Language"
+  | "Framework"
+  | "Platform"
+  | "Protocol"
+  | "Methodology"
+  | "Domain Knowledge"
   | "Soft Skill";
 
-type SkillFunction = 
-  | "Development" 
-  | "Architecture" 
-  | "Testing" 
-  | "Management" 
+type SkillFunction =
+  | "Development"
+  | "Architecture"
+  | "Testing"
+  | "Management"
   | "Consulting";
 
-type ProficiencyLevel = 
-  | "Junior" 
-  | "Mid" 
-  | "Senior" 
-  | "Lead" 
+type ProficiencyLevel =
+  | "Junior"
+  | "Mid"
+  | "Senior"
+  | "Lead"
   | "Expert";
 
-type ProjectScale = 
-  | "Small" 
-  | "Medium" 
-  | "Large" 
+type ProjectScale =
+  | "Small"
+  | "Medium"
+  | "Large"
   | "Enterprise";
 
 interface Skill {
@@ -441,13 +441,39 @@ class KnowledgeGraphManager {
     const newExperiences = experiences.filter(exp =>
       !graph.entities.some(entity => entity.name === exp.title)
     );
-    graph.entities.push(...newExperiences.map(exp => ({
+    const existingEntities = experiences.filter(exp =>
+      graph.entities.some(entity => entity.name === exp.title)
+    );
+
+    // Update existing entries
+    for (const exp of existingEntities) {
+      const existingEntity = graph.entities.find(e => e.name === exp.title);
+      if (existingEntity) {
+        existingEntity.observations[0] = exp.description || "";
+      }
+    }
+
+    // Add new entities
+    const newEntityExperiences = newExperiences.map(exp => ({
       name: exp.title,
       entityType: "WorkExperience",
-      observations: [exp.description],
-    })));
+      observations: [exp.description || ""]
+    }));
+
+    graph.entities = graph.entities.map(entity => {
+      const matchingNewEntity = newEntityExperiences.find(newEntity => newEntity.name === entity.name);
+      if (matchingNewEntity && entity.entityType === "WorkExperience") {
+        return matchingNewEntity;
+      }
+      return entity;
+    });
+
+    // Add any new entities that weren't already in the graph
+    const existingTitles = graph.entities.map(e => e.name);
+    graph.entities.push(...newEntityExperiences.filter(newEntity => !existingTitles.includes(newEntity.name)));
+
     await this.saveGraph(graph);
-    return newExperiences;
+    return [...newExperiences, ...existingEntities];
   }
 
   async deleteWorkExperience(titles: string[]): Promise<void> {
@@ -486,13 +512,59 @@ class KnowledgeGraphManager {
     const newExperiences = experiences.filter(exp =>
       !graph.entities.some(entity => entity.name === exp.school)
     );
-    graph.entities.push(...newExperiences.map(exp => ({
+    const existingEntities = experiences.filter(exp =>
+      graph.entities.some(entity => entity.name === exp.school)
+    );
+
+    // Update existing entries
+    for (const exp of existingEntities) {
+      const existingEntity = graph.entities.find(e => e.name === exp.school);
+      if (existingEntity) {
+        existingEntity.observations[0] = JSON.stringify({
+          degree: exp.degree || "",
+          fieldOfStudy: exp.fieldOfStudy || "",
+          startDate: exp.startDate || "",
+          endDate: exp.endDate || "",
+          grade: exp.grade || "",
+          activitiesAndSocieties: exp.activitiesAndSocieties || [],
+          description: exp.description || "",
+          skills: exp.skills || [],
+          media: exp.media || []
+        });
+      }
+    }
+
+    // Add new entities
+    const newEntityExperiences = newExperiences.map(exp => ({
       name: exp.school,
       entityType: "EducationExperience",
-      observations: [exp.description || ""],
-    })));
+      observations: [JSON.stringify({
+        degree: exp.degree || "",
+        fieldOfStudy: exp.fieldOfStudy || "",
+        startDate: exp.startDate || "",
+        endDate: exp.endDate || "",
+        grade: exp.grade || "",
+        activitiesAndSocieties: exp.activitiesAndSocieties || [],
+        description: exp.description || "",
+        skills: exp.skills || [],
+        media: exp.media || []
+      })]
+    }));
+
+    graph.entities = graph.entities.map(entity => {
+      const matchingNewEntity = newEntityExperiences.find(newEntity => newEntity.name === entity.name);
+      if (matchingNewEntity && entity.entityType === "EducationExperience") {
+        return matchingNewEntity;
+      }
+      return entity;
+    });
+
+    // Add any new entities that weren't already in the graph
+    const existingSchools = graph.entities.map(e => e.name);
+    graph.entities.push(...newEntityExperiences.filter(newEntity => !existingSchools.includes(newEntity.name)));
+
     await this.saveGraph(graph);
-    return newExperiences;
+    return [...newExperiences, ...existingEntities];
   }
 
   async deleteEducationExperience(schools: string[]): Promise<void> {
@@ -505,22 +577,39 @@ class KnowledgeGraphManager {
     const graph = await this.loadGraph();
     return graph.entities
       .filter(e => e.entityType === "EducationExperience" && e.name.includes(query))
-      .map(e => ({
-        school: e.name,
-        degree: "",
-        fieldOfStudy: "",
-        startDate: "",
-        endDate: "",
-        grade: "",
-        activitiesAndSocieties: [],
-        description: e.observations[0],
-        skills: [],
-        media: [],
-      }));
-  }
-
-  // ---------------------------------------
-  // CareerBreak
+      .map(e => {
+        try {
+          const obs = e.observations[0] || '{}';
+          const expData = JSON.parse(obs);
+          return {
+            school: e.name,
+            degree: expData.degree || "",
+            fieldOfStudy: expData.fieldOfStudy || "",
+            startDate: expData.startDate || "",
+            endDate: expData.endDate || "",
+            grade: expData.grade || "",
+            activitiesAndSocieties: expData.activitiesAndSocieties || [],
+            description: expData.description || "",
+            skills: expData.skills || [],
+            media: expData.media || [],
+          };
+        } catch (error) {
+          console.error(`Failed to parse education experience for ${e.name}:`, error);
+          return {
+            school: e.name,
+            degree: "",
+            fieldOfStudy: "",
+            startDate: "",
+            endDate: "",
+            grade: "",
+            activitiesAndSocieties: [],
+            description: "",
+            skills: [],
+            media: [],
+          };
+        }
+      });
+  } // --------------------------------------- // CareerBreak
   // ---------------------------------------
 
   async addCareerBreak(careerBreaks: CareerBreak[]): Promise<CareerBreak[]> {
@@ -611,18 +700,20 @@ class KnowledgeGraphManager {
 
   async calculateSkillMetrics(skillName: string): Promise<SkillMetrics> {
     const graph = await this.loadGraph();
-    const skillEntity = graph.entities.find(e => 
+    const skillEntity = graph.entities.find(e =>
       e.entityType === "Skill" && e.name === skillName
     );
 
-    if (!skillEntity) {
+    if (!skillEntity)
+    {
       throw new Error(`Skill not found: ${skillName}`);
     }
 
     const skillData = JSON.parse(skillEntity.observations[0]);
     const workExperiences = skillData.workExperiences;
 
-    if (!workExperiences.length) {
+    if (!workExperiences.length)
+    {
       return {
         skillName,
         totalYearsExperience: 0,
@@ -636,7 +727,7 @@ class KnowledgeGraphManager {
     // Calculate dates
     const now = new Date();
     const dates = workExperiences.map((exp: { experienceId: string }) => {
-      const workExp = graph.entities.find(e => 
+      const workExp = graph.entities.find(e =>
         e.entityType === "WorkExperience" && e.name === exp.experienceId
       );
       if (!workExp) return null;
@@ -659,25 +750,26 @@ class KnowledgeGraphManager {
     }, 0);
 
     // Calculate experience by function
-    const functionMap = new Map<SkillFunction, { years: number; maxLevel: ProficiencyLevel }>(); 
+    const functionMap = new Map<SkillFunction, { years: number; maxLevel: ProficiencyLevel }>();
     workExperiences.forEach((exp: { experienceId: string; function: SkillFunction; level: ProficiencyLevel }) => {
       const fn = exp.function;
       const current = functionMap.get(fn) || { years: 0, maxLevel: "Junior" as ProficiencyLevel };
-      
+
       // Add years for this experience
-      const workExp = graph.entities.find(e => 
+      const workExp = graph.entities.find(e =>
         e.entityType === "WorkExperience" && e.name === exp.experienceId
       );
-      if (workExp) {
+      if (workExp)
+      {
         const expData = JSON.parse(workExp.observations[0]);
         const start = new Date(expData.startDate);
         const end = expData.endDate ? new Date(expData.endDate) : now;
         const years = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 365);
-        
+
         functionMap.set(fn, {
           years: current.years + years,
-          maxLevel: this.getProficiencyPrecedence(exp.level) > this.getProficiencyPrecedence(current.maxLevel) 
-            ? exp.level 
+          maxLevel: this.getProficiencyPrecedence(exp.level) > this.getProficiencyPrecedence(current.maxLevel)
+            ? exp.level
             : current.maxLevel
         });
       }
@@ -1238,7 +1330,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                 type: "object",
                 properties: {
                   skillName: { type: "string", description: "Name of the skill" },
-                  category: { 
+                  category: {
                     type: "string",
                     enum: ["Technical", "Programming Language", "Framework", "Platform", "Protocol", "Methodology", "Domain Knowledge", "Soft Skill"],
                     description: "Category of the skill"
@@ -1268,7 +1360,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                       type: "object",
                       properties: {
                         experienceId: { type: "string" },
-                        function: { 
+                        function: {
                           type: "string",
                           enum: ["Development", "Architecture", "Testing", "Management", "Consulting"]
                         },
