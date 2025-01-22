@@ -103,9 +103,75 @@ interface CareerBreak {
   media?: string[]; // Array of media links or descriptions related to the career break
 }
 
+type SkillCategory = 
+  | "Technical" 
+  | "Programming Language" 
+  | "Framework" 
+  | "Platform" 
+  | "Protocol" 
+  | "Methodology" 
+  | "Domain Knowledge" 
+  | "Soft Skill";
+
+type SkillFunction = 
+  | "Development" 
+  | "Architecture" 
+  | "Testing" 
+  | "Management" 
+  | "Consulting";
+
+type ProficiencyLevel = 
+  | "Junior" 
+  | "Mid" 
+  | "Senior" 
+  | "Lead" 
+  | "Expert";
+
+type ProjectScale = 
+  | "Small" 
+  | "Medium" 
+  | "Large" 
+  | "Enterprise";
+
 interface Skill {
-  skillName: string; // Name of the skill, e.g., "Project Management"
-  relatedSkills?: string[]; // Suggested related skills based on profile
+  skillName: string;
+  category: SkillCategory;
+  subcategory?: string;
+  // Relationships to other skills
+  relationships: {
+    complementarySkills: string[];
+    prerequisiteSkills: string[];
+    progressionSkills: string[];
+  };
+  // Associated tooling
+  tooling: {
+    primaryTools: string[];
+    frameworks: string[];
+    supportingTools: string[];
+  };
+  // Connection to work experiences
+  workExperiences: {
+    experienceId: string;
+    function: SkillFunction;
+    level: ProficiencyLevel;
+    responsibilities: string[];
+    projectScale?: ProjectScale;
+    teamSize?: number;
+  }[];
+}
+
+// Computed interface for skill metrics (derived from work experiences)
+interface SkillMetrics {
+  skillName: string;
+  totalYearsExperience: number;
+  lastUsed: string; // ISO date derived from latest work experience
+  firstUsed: string; // ISO date derived from earliest work experience
+  proficiencyLevel: ProficiencyLevel;
+  experiencesByFunction: {
+    function: SkillFunction;
+    years: number;
+    level: ProficiencyLevel;
+  }[];
 }
 
 interface OnlineContribution {
@@ -506,8 +572,15 @@ class KnowledgeGraphManager {
     graph.entities.push(...newSkills.map(s => ({
       name: s.skillName,
       entityType: "Skill",
-      // Store related skills in observations as a JSON string (or any other approach)
-      observations: [s.relatedSkills ? JSON.stringify(s.relatedSkills) : ""],
+      observations: [
+        JSON.stringify({
+          category: s.category,
+          subcategory: s.subcategory,
+          relationships: s.relationships,
+          tooling: s.tooling,
+          workExperiences: s.workExperiences
+        })
+      ],
     })));
     await this.saveGraph(graph);
     return newSkills;
@@ -523,10 +596,135 @@ class KnowledgeGraphManager {
     const graph = await this.loadGraph();
     return graph.entities
       .filter(e => e.entityType === "Skill" && e.name.includes(query))
-      .map(e => ({
-        skillName: e.name,
-        relatedSkills: e.observations[0] ? JSON.parse(e.observations[0]) : [],
+      .map(e => {
+        const skillData = JSON.parse(e.observations[0]);
+        return {
+          skillName: e.name,
+          category: skillData.category,
+          subcategory: skillData.subcategory,
+          relationships: skillData.relationships,
+          tooling: skillData.tooling,
+          workExperiences: skillData.workExperiences
+        };
+      });
+  }
+
+  async calculateSkillMetrics(skillName: string): Promise<SkillMetrics> {
+    const graph = await this.loadGraph();
+    const skillEntity = graph.entities.find(e => 
+      e.entityType === "Skill" && e.name === skillName
+    );
+
+    if (!skillEntity) {
+      throw new Error(`Skill not found: ${skillName}`);
+    }
+
+    const skillData = JSON.parse(skillEntity.observations[0]);
+    const workExperiences = skillData.workExperiences;
+
+    if (!workExperiences.length) {
+      return {
+        skillName,
+        totalYearsExperience: 0,
+        lastUsed: new Date().toISOString(), // Default to current date if no experiences
+        firstUsed: new Date().toISOString(),
+        proficiencyLevel: "Junior" as ProficiencyLevel,
+        experiencesByFunction: []
+      };
+    }
+
+    // Calculate dates
+    const now = new Date();
+    const dates = workExperiences.map((exp: { experienceId: string }) => {
+      const workExp = graph.entities.find(e => 
+        e.entityType === "WorkExperience" && e.name === exp.experienceId
+      );
+      if (!workExp) return null;
+
+      const expData = JSON.parse(workExp.observations[0]);
+      return {
+        start: new Date(expData.startDate),
+        end: expData.endDate ? new Date(expData.endDate) : now
+      };
+    }).filter((d: { start: Date; end: Date } | null): d is { start: Date; end: Date } => d !== null);
+
+    // Calculate first and last used dates
+    const firstUsed = new Date(Math.min(...dates.map((d: { start: Date; end: Date } | null) => d!.start.getTime()))).toISOString();
+    const lastUsed = new Date(Math.max(...dates.map((d: { start: Date; end: Date } | null) => d!.end.getTime()))).toISOString();
+
+    // Calculate total years of experience
+    const totalYearsExperience = dates.reduce((total: number, date: { start: Date; end: Date } | null) => {
+      const years = (date!.end.getTime() - date!.start.getTime()) / (1000 * 60 * 60 * 24 * 365);
+      return total + years;
+    }, 0);
+
+    // Calculate experience by function
+    const functionMap = new Map<SkillFunction, { years: number; maxLevel: ProficiencyLevel }>(); 
+    workExperiences.forEach((exp: { experienceId: string; function: SkillFunction; level: ProficiencyLevel }) => {
+      const fn = exp.function;
+      const current = functionMap.get(fn) || { years: 0, maxLevel: "Junior" as ProficiencyLevel };
+      
+      // Add years for this experience
+      const workExp = graph.entities.find(e => 
+        e.entityType === "WorkExperience" && e.name === exp.experienceId
+      );
+      if (workExp) {
+        const expData = JSON.parse(workExp.observations[0]);
+        const start = new Date(expData.startDate);
+        const end = expData.endDate ? new Date(expData.endDate) : now;
+        const years = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 365);
+        
+        functionMap.set(fn, {
+          years: current.years + years,
+          maxLevel: this.getProficiencyPrecedence(exp.level) > this.getProficiencyPrecedence(current.maxLevel) 
+            ? exp.level 
+            : current.maxLevel
+        });
+      }
+    });
+
+    const experiencesByFunction = Array.from(functionMap.entries())
+      .map(([fn, data]) => ({
+        function: fn,
+        years: data.years,
+        level: data.maxLevel
       }));
+
+    // Calculate overall proficiency level based on years and max level across all functions
+    const maxLevel = Math.max(...Array.from(functionMap.values())
+      .map(data => this.getProficiencyPrecedence(data.maxLevel)));
+
+    const proficiencyLevel = this.getProficiencyLevel(maxLevel);
+
+    return {
+      skillName,
+      totalYearsExperience,
+      lastUsed,
+      firstUsed,
+      proficiencyLevel,
+      experiencesByFunction
+    };
+  }
+
+  // Helper function to get precedence of proficiency levels
+  private getProficiencyPrecedence(level: ProficiencyLevel): number {
+    const precedence: Record<ProficiencyLevel, number> = {
+      "Junior": 1,
+      "Mid": 2,
+      "Senior": 3,
+      "Lead": 4,
+      "Expert": 5
+    };
+    return precedence[level];
+  }
+
+  // Helper function to get proficiency level from precedence
+  private getProficiencyLevel(precedence: number): ProficiencyLevel {
+    if (precedence >= 5) return "Expert";
+    if (precedence >= 4) return "Lead";
+    if (precedence >= 3) return "Senior";
+    if (precedence >= 2) return "Mid";
+    return "Junior";
   }
 
   // ---------------------------------------
@@ -1040,13 +1238,56 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                 type: "object",
                 properties: {
                   skillName: { type: "string", description: "Name of the skill" },
-                  relatedSkills: {
+                  category: { 
+                    type: "string",
+                    enum: ["Technical", "Programming Language", "Framework", "Platform", "Protocol", "Methodology", "Domain Knowledge", "Soft Skill"],
+                    description: "Category of the skill"
+                  },
+                  subcategory: { type: "string", description: "Optional subcategory" },
+                  relationships: {
+                    type: "object",
+                    properties: {
+                      complementarySkills: { type: "array", items: { type: "string" } },
+                      prerequisiteSkills: { type: "array", items: { type: "string" } },
+                      progressionSkills: { type: "array", items: { type: "string" } }
+                    },
+                    required: ["complementarySkills", "prerequisiteSkills", "progressionSkills"]
+                  },
+                  tooling: {
+                    type: "object",
+                    properties: {
+                      primaryTools: { type: "array", items: { type: "string" } },
+                      frameworks: { type: "array", items: { type: "string" } },
+                      supportingTools: { type: "array", items: { type: "string" } }
+                    },
+                    required: ["primaryTools", "frameworks", "supportingTools"]
+                  },
+                  workExperiences: {
                     type: "array",
-                    items: { type: "string" },
-                    description: "List of related skill names"
+                    items: {
+                      type: "object",
+                      properties: {
+                        experienceId: { type: "string" },
+                        function: { 
+                          type: "string",
+                          enum: ["Development", "Architecture", "Testing", "Management", "Consulting"]
+                        },
+                        level: {
+                          type: "string",
+                          enum: ["Junior", "Mid", "Senior", "Lead", "Expert"]
+                        },
+                        responsibilities: { type: "array", items: { type: "string" } },
+                        projectScale: {
+                          type: "string",
+                          enum: ["Small", "Medium", "Large", "Enterprise"]
+                        },
+                        teamSize: { type: "number" }
+                      },
+                      required: ["experienceId", "function", "level", "responsibilities"]
+                    }
                   }
                 },
-                required: ["skillName"]
+                required: ["skillName", "category", "relationships", "tooling", "workExperiences"]
               }
             }
           },
@@ -1066,6 +1307,20 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             }
           },
           required: ["skillNames"]
+        }
+      },
+      {
+        name: "calculate_skill_metrics",
+        description: "Calculate detailed metrics for a specific skill based on work experiences",
+        inputSchema: {
+          type: "object",
+          properties: {
+            skillName: {
+              type: "string",
+              description: "Name of the skill to calculate metrics for"
+            }
+          },
+          required: ["skillName"]
         }
       },
       {
@@ -1606,6 +1861,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             type: "text",
             text: JSON.stringify(
               await knowledgeGraphManager.searchSkill(args.query as string),
+              null,
+              2
+            )
+          }
+        ]
+      };
+    case "calculate_skill_metrics":
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(
+              await knowledgeGraphManager.calculateSkillMetrics(args.skillName as string),
               null,
               2
             )
