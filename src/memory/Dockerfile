@@ -1,24 +1,26 @@
 FROM node:22.12-alpine AS builder
 
-WORKDIR /app
+WORKDIR /app/memory
 
-# Copy workspace configuration
-COPY package*.json ./
-COPY tsconfig.json ./
+# Copy only necessary files from the memory server directory
+COPY src/memory/package*.json ./
+COPY src/memory/tsconfig.json ./
+COPY src/memory/*.ts ./
 
-# Copy all source directories (needed for workspace)
-COPY src ./src
+ENV PATH="/usr/local/bin:${PATH}"
 
-# Install dependencies and update package-lock.json
-RUN npm install && \
-    cd src/memory && \
-    npm install @modelcontextprotocol/sdk@1.0.1 && \
-    cd ../.. && \
-    npm install --package-lock-only
+RUN npm install -g typescript@5.6.2
+RUN npm install -g shx@0.3.4
+RUN npm install -g @modelcontextprotocol/sdk@1.0.1
 
-# Clean and build the memory server
-WORKDIR /app/src/memory
-RUN npm run clean && npm run build
+# Install dependencies and build
+RUN set -x && \
+    npm install --no-optional --ignore-scripts && \
+    # Use path to local TypeScript
+    tsc --project tsconfig.json && \
+    mkdir -p lib && \
+    shx chmod +x lib/*.js && \
+    set +x
 
 FROM node:22-alpine AS release
 
@@ -26,15 +28,13 @@ FROM node:22-alpine AS release
 RUN addgroup -S vscode && \
     adduser -S vscode -G vscode
 
-# Create directory for the application
 WORKDIR /app
 
-# Copy built application and dependencies
-COPY --from=builder /app/src/memory/lib ./lib
-COPY --from=builder /app/src/memory/package*.json ./
-COPY --from=builder /app/package-lock.json ./
+# Copy only built files and dependencies
+COPY --from=builder /app/memory/lib ./lib
+COPY --from=builder /app/memory/package*.json ./
 
-# Install only runtime dependencies, skip prepare scripts
+# Install only production dependencies
 RUN npm install --omit=dev --ignore-scripts && \
     npm cache clean --force
 
@@ -42,15 +42,16 @@ RUN npm install --omit=dev --ignore-scripts && \
 ENV NODE_ENV=production
 ENV MCP_MEMORY_PATH=/app/data/memory.jsonl
 
-# Create the volume and ensure proper permissions
+# Create and configure data directory
 RUN mkdir -p /app/data && \
     chown vscode:vscode /app/data && \
     chmod 775 /app/data
 
-# Define the volume for /app/data
 VOLUME ["/app/data"]
-
-# Switch to non-root user
 USER vscode
 
 ENTRYPOINT ["node", "lib/index.js"]
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD node -e "process.exit(0)"

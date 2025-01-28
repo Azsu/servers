@@ -50,12 +50,24 @@ interface Entity {
   name: string;
   entityType: string;
   observations: string[];
+  metadata?: {
+    startDate?: string;
+    endDate?: string;
+    duration?: number;
+    description?: string;
+  };
 }
 
 interface Relation {
   from: string;
   to: string;
   relationType: string;
+  metadata?: {
+    startDate?: string;
+    endDate?: string;
+    duration?: number;
+    description?: string;
+  };
 }
 
 interface KnowledgeGraph {
@@ -446,9 +458,11 @@ class KnowledgeGraphManager {
     );
 
     // Update existing entries
-    for (const exp of existingEntities) {
+    for (const exp of existingEntities)
+    {
       const existingEntity = graph.entities.find(e => e.name === exp.title);
-      if (existingEntity) {
+      if (existingEntity)
+      {
         existingEntity.observations[0] = exp.description || "";
       }
     }
@@ -462,7 +476,8 @@ class KnowledgeGraphManager {
 
     graph.entities = graph.entities.map(entity => {
       const matchingNewEntity = newEntityExperiences.find(newEntity => newEntity.name === entity.name);
-      if (matchingNewEntity && entity.entityType === "WorkExperience") {
+      if (matchingNewEntity && entity.entityType === "WorkExperience")
+      {
         return matchingNewEntity;
       }
       return entity;
@@ -517,9 +532,11 @@ class KnowledgeGraphManager {
     );
 
     // Update existing entries
-    for (const exp of existingEntities) {
+    for (const exp of existingEntities)
+    {
       const existingEntity = graph.entities.find(e => e.name === exp.school);
-      if (existingEntity) {
+      if (existingEntity)
+      {
         existingEntity.observations[0] = JSON.stringify({
           degree: exp.degree || "",
           fieldOfStudy: exp.fieldOfStudy || "",
@@ -553,7 +570,8 @@ class KnowledgeGraphManager {
 
     graph.entities = graph.entities.map(entity => {
       const matchingNewEntity = newEntityExperiences.find(newEntity => newEntity.name === entity.name);
-      if (matchingNewEntity && entity.entityType === "EducationExperience") {
+      if (matchingNewEntity && entity.entityType === "EducationExperience")
+      {
         return matchingNewEntity;
       }
       return entity;
@@ -578,7 +596,8 @@ class KnowledgeGraphManager {
     return graph.entities
       .filter(e => e.entityType === "EducationExperience" && e.name.includes(query))
       .map(e => {
-        try {
+        try
+        {
           const obs = e.observations[0] || '{}';
           const expData = JSON.parse(obs);
           return {
@@ -593,7 +612,8 @@ class KnowledgeGraphManager {
             skills: expData.skills || [],
             media: expData.media || [],
           };
-        } catch (error) {
+        } catch (error)
+        {
           console.error(`Failed to parse education experience for ${e.name}:`, error);
           return {
             school: e.name,
@@ -696,6 +716,76 @@ class KnowledgeGraphManager {
           workExperiences: skillData.workExperiences
         };
       });
+  }
+
+  async calculateExperience(technology: string): Promise<number> {
+    const graph = await this.loadGraph();
+    let totalDuration = 0;
+
+    // First find the technology entity
+    const techEntity = graph.entities.find(e =>
+      e.name.toLowerCase() === technology.toLowerCase() &&
+      (e.entityType === "Skill" || e.entityType === "Technology")
+    );
+
+    if (!techEntity)
+    {
+      throw new Error(`Technology/Skill not found: ${technology}`);
+    }
+
+    // Get all relations where this technology was used
+    const relatedExperiences = graph.relations.filter(relation =>
+      relation.from === techEntity.name &&
+      (relation.relationType === "UsedIn" || relation.relationType === "UsedSkill")
+    );
+
+    for (const experience of relatedExperiences)
+    {
+      // If the relation has explicit duration metadata, use that
+      if (experience.metadata?.duration)
+      {
+        totalDuration += experience.metadata.duration;
+        continue;
+      }
+
+      // Otherwise calculate duration from dates
+      if (experience.metadata?.startDate)
+      {
+        const startDate = new Date(experience.metadata.startDate);
+        const endDate = experience.metadata?.endDate ? new Date(experience.metadata.endDate) : new Date();
+        const durationInYears = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+        totalDuration += durationInYears;
+      }
+    }
+
+    // Also check work experiences that used this technology
+    const workExperiences = graph.entities.filter(e => e.entityType === "WorkExperience");
+    for (const work of workExperiences)
+    {
+      try
+      {
+        // Check if this work experience used the technology
+        const expData = JSON.parse(work.observations[0] || '{}');
+        if (expData.skills?.includes(technology))
+        {
+          const startDate = new Date(expData.startDate || work.metadata?.startDate);
+          const endDate = expData.endDate ? new Date(expData.endDate) :
+            work.metadata?.endDate ? new Date(work.metadata.endDate) :
+              new Date();
+
+          if (startDate)
+          {
+            const durationInYears = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+            totalDuration += durationInYears;
+          }
+        }
+      } catch (error)
+      {
+        console.error(`Error processing work experience ${work.name}:`, error);
+      }
+    }
+
+    return parseFloat(totalDuration.toFixed(2)); // Round to 2 decimal places
   }
 
   async calculateSkillMetrics(skillName: string): Promise<SkillMetrics> {
@@ -1106,6 +1196,17 @@ const server = new Server(
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
+      {
+        name: "calculate_experience",
+        description: "Calculate total experience with a specific technology",
+        inputSchema: {
+          type: "object",
+          properties: {
+            technology: { type: "string" }
+          },
+          required: ["technology"]
+        }
+      },
       {
         name: "calculate_experience",
         description: "Calculate total experience with a specific technology",
@@ -1863,6 +1964,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   switch (name)
   {
+    case "calculate_experience":
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({ years: await knowledgeGraphManager.calculateExperience(args.technology as string) }, null, 2)
+        }]
+      };
     case "read_graph":
       return { content: [{ type: "text", text: JSON.stringify(await knowledgeGraphManager.readGraph(), null, 2) }] };
     case "search_nodes":
@@ -2247,16 +2355,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function main() {
   try
   {
-    // Ensure memory directory exists on startup
     await ensureMemoryDirectory();
-
     const transport = new StdioServerTransport();
     await server.connect(transport);
     console.error("Knowledge Graph MCP Server running on stdio");
     console.error("Using memory file:", MEMORY_FILE_PATH);
   } catch (error)
   {
-    console.error("Fatal error during startup:", error);
+    if (error instanceof Error)
+    {
+      console.error("Fatal error during startup:", error.message);
+      if (error.stack) console.error(error.stack);
+    } else
+    {
+      console.error("Fatal error during startup:", error);
+    }
     process.exit(1);
   }
 }

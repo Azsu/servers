@@ -15,16 +15,20 @@
   ],
   "scripts": {
     "clean": "rm -rf lib",
-    "build": "npm run clean && tsc && mkdir -p lib && shx chmod +x lib/*.js",
+    "build": "npm run clean && tsc --project /app/memory/tsconfig.json && mkdir -p lib && shx chmod +x lib/*.js",
     "prepare": "npm run build",
     "watch": "tsc --watch"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.0.1"
+    "@modelcontextprotocol/sdk": "1.0.1",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/node": "^22",
     "shx": "^0.3.4",
     "typescript": "^5.6.2"
+  },
+  "engines": {
+    "node": ">=22.12.0"
   }
 }
