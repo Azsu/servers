@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-// Custom error types
+// Error types
 export class GraphError extends Error {
   constructor(message: string) {
     super(message);
@@ -29,8 +29,65 @@ export class ValidationError extends GraphError {
   }
 }
 
+// Base enums
+const SkillCategoryEnum = z.enum([
+  "Technical",
+  "Programming Language",
+  "Framework",
+  "Platform",
+  "Protocol",
+  "Methodology",
+  "Domain Knowledge",
+  "Soft Skill"
+]);
+
+const SkillFunctionEnum = z.enum([
+  "Development",
+  "Architecture",
+  "Testing",
+  "Management",
+  "Consulting"
+]);
+
+const ProficiencyLevelEnum = z.enum([
+  "Junior",
+  "Mid",
+  "Senior",
+  "Lead",
+  "Expert"
+]);
+
+const ProjectScaleEnum = z.enum([
+  "Small",
+  "Medium",
+  "Large",
+  "Enterprise"
+]);
+
+const SkillLevelEnum = z.enum([
+  "BEGINNER",
+  "INTERMEDIATE",
+  "ADVANCED",
+  "EXPERT"
+]);
+
+const EntityTypeEnum = z.enum([
+  "WORK_EXPERIENCE",
+  "PROJECT",
+  "SKILL",
+  "EDUCATION",
+  "CONTRIBUTION"
+]);
+
+const ReferenceTypeEnum = z.enum([
+  "SUPPORTS",
+  "PREREQUISITES",
+  "LEADS_TO",
+  "RELATED"
+]);
+
 // Base schemas
-export const EntitySchema = z.object({
+const EntitySchema = z.object({
   name: z.string(),
   entityType: z.string(),
   observations: z.array(z.string()),
@@ -42,7 +99,7 @@ export const EntitySchema = z.object({
   }).optional(),
 });
 
-export const RelationSchema = z.object({
+const RelationSchema = z.object({
   from: z.string(),
   to: z.string(),
   relationType: z.string(),
@@ -51,67 +108,29 @@ export const RelationSchema = z.object({
     endDate: z.string().optional(),
     duration: z.number().optional(),
     description: z.string().optional(),
+    level: z.string().optional(),
+    context: z.string().optional(),
+    role: z.string().optional(),
+    impact: z.string().optional(),
+    responsibilities: z.array(z.string()).optional(),
+    relevance: z.string().optional(),
+    skills: z.array(z.string()).optional()
   }).optional(),
 });
 
-export const KnowledgeGraphSchema = z.object({
+const KnowledgeGraphSchema = z.object({
   entities: z.array(EntitySchema),
   relations: z.array(RelationSchema),
 });
 
-// Derived types from schemas
-export type Entity = z.infer<typeof EntitySchema>;
-export type Relation = z.infer<typeof RelationSchema>;
-export type KnowledgeGraph = z.infer<typeof KnowledgeGraphSchema>;
-
-// Experience and skill related types
-export const SkillCategoryEnum = z.enum([
-  "Technical",
-  "Programming Language",
-  "Framework",
-  "Platform",
-  "Protocol",
-  "Methodology",
-  "Domain Knowledge",
-  "Soft Skill",
-]);
-
-export const SkillFunctionEnum = z.enum([
-  "Development",
-  "Architecture",
-  "Testing",
-  "Management",
-  "Consulting",
-]);
-
-export const ProficiencyLevelEnum = z.enum([
-  "Junior",
-  "Mid",
-  "Senior",
-  "Lead",
-  "Expert",
-]);
-
-export const ProjectScaleEnum = z.enum([
-  "Small",
-  "Medium",
-  "Large",
-  "Enterprise",
-]);
-
-export type SkillCategory = z.infer<typeof SkillCategoryEnum>;
-export type SkillFunction = z.infer<typeof SkillFunctionEnum>;
-export type ProficiencyLevel = z.infer<typeof ProficiencyLevelEnum>;
-export type ProjectScale = z.infer<typeof ProjectScaleEnum>;
-
 // Experience schemas
-export const WorkExperienceSchema = z.object({
+const WorkExperienceSchema = z.object({
   title: z.string(),
   employmentType: z.string(),
   companyName: z.string(),
   isCurrentRole: z.boolean(),
-  startDate: z.string().regex(/^\d{4}-\d{2}$/),
-  endDate: z.string().regex(/^\d{4}-\d{2}$/).optional(),
+  startDate: z.string(),
+  endDate: z.string().optional(),
   location: z.string(),
   locationType: z.string(),
   description: z.string(),
@@ -121,7 +140,7 @@ export const WorkExperienceSchema = z.object({
   media: z.array(z.string()).optional(),
 });
 
-export const EducationExperienceSchema = z.object({
+const EducationExperienceSchema = z.object({
   school: z.string(),
   degree: z.string(),
   fieldOfStudy: z.string(),
@@ -134,7 +153,7 @@ export const EducationExperienceSchema = z.object({
   media: z.array(z.string()).optional(),
 });
 
-export const CareerBreakSchema = z.object({
+const CareerBreakSchema = z.object({
   type: z.string(),
   location: z.string().optional(),
   isCurrent: z.boolean(),
@@ -145,7 +164,8 @@ export const CareerBreakSchema = z.object({
   media: z.array(z.string()).optional(),
 });
 
-export const SkillSchema = z.object({
+// Skill schemas
+const SkillSchema = z.object({
   skillName: z.string(),
   category: SkillCategoryEnum,
   subcategory: z.string().optional(),
@@ -169,7 +189,7 @@ export const SkillSchema = z.object({
   })),
 });
 
-export const SkillMetricsSchema = z.object({
+const SkillMetricsSchema = z.object({
   skillName: z.string(),
   totalYearsExperience: z.number(),
   lastUsed: z.string(),
@@ -182,8 +202,8 @@ export const SkillMetricsSchema = z.object({
   })),
 });
 
-// Contribution and certification schemas
-export const OnlineContributionSchema = z.object({
+// Contribution schemas
+const OnlineContributionSchema = z.object({
   type: z.string(),
   title: z.string(),
   description: z.string().optional(),
@@ -192,7 +212,7 @@ export const OnlineContributionSchema = z.object({
   dateAdded: z.string(),
 });
 
-export const LicenseOrCertificationSchema = z.object({
+const LicenseOrCertificationSchema = z.object({
   name: z.string(),
   issuingOrganization: z.string(),
   description: z.string().optional(),
@@ -204,8 +224,8 @@ export const LicenseOrCertificationSchema = z.object({
   media: z.array(z.string()).optional(),
 });
 
-// Project and course schemas
-export const ProjectSchema = z.object({
+// Project schemas
+const ProjectSchema = z.object({
   projectName: z.string(),
   description: z.string().optional(),
   skills: z.array(z.string()).optional(),
@@ -217,14 +237,14 @@ export const ProjectSchema = z.object({
   associatedWith: z.string().optional(),
 });
 
-export const CourseSchema = z.object({
+const CourseSchema = z.object({
   courseName: z.string(),
   courseNumber: z.string().optional(),
   associatedWith: z.string().optional(),
 });
 
-// Reference and organization schemas
-export const ReferenceSchema = z.object({
+// Reference schemas
+const ReferenceSchema = z.object({
   name: z.string(),
   contactInfo: z.string(),
   jobTitle: z.string(),
@@ -233,7 +253,7 @@ export const ReferenceSchema = z.object({
   additionalNotes: z.string().optional(),
 });
 
-export const OrganizationSchema = z.object({
+const OrganizationSchema = z.object({
   organizationName: z.string(),
   positionHeld: z.string(),
   associatedWith: z.string().optional(),
@@ -243,7 +263,7 @@ export const OrganizationSchema = z.object({
   description: z.string().optional(),
 });
 
-export const HonorOrAwardSchema = z.object({
+const HonorOrAwardSchema = z.object({
   title: z.string(),
   associatedWith: z.string().optional(),
   issuer: z.string(),
@@ -252,7 +272,50 @@ export const HonorOrAwardSchema = z.object({
   media: z.array(z.string()).optional(),
 });
 
-// Export derived types
+// Relation schemas
+const ExperienceSkillRelationSchema = z.object({
+  experienceId: z.string(),
+  skillId: z.string(),
+  level: SkillLevelEnum,
+  context: z.string(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional()
+});
+
+const ProjectExperienceRelationSchema = z.object({
+  projectId: z.string(),
+  experienceId: z.string(),
+  role: z.string(),
+  impact: z.string(),
+  responsibilities: z.array(z.string())
+});
+
+const CrossReferenceRelationSchema = z.object({
+  sourceType: EntityTypeEnum,
+  sourceId: z.string(),
+  targetType: EntityTypeEnum,
+  targetId: z.string(),
+  referenceType: ReferenceTypeEnum,
+  context: z.string().optional()
+});
+
+const ContributionExperienceRelationSchema = z.object({
+  contributionId: z.string(),
+  experienceId: z.string(),
+  relevance: z.string(),
+  skills: z.array(z.string())
+});
+
+// Export schemas and enums
+export {
+  CareerBreakSchema, ContributionExperienceRelationSchema, CourseSchema, CrossReferenceRelationSchema, EducationExperienceSchema, EntitySchema, EntityTypeEnum, ExperienceSkillRelationSchema, HonorOrAwardSchema, KnowledgeGraphSchema, LicenseOrCertificationSchema, OnlineContributionSchema, OrganizationSchema, ProficiencyLevelEnum, ProjectExperienceRelationSchema, ProjectScaleEnum, ProjectSchema, ReferenceSchema, ReferenceTypeEnum, RelationSchema, SkillCategoryEnum,
+  SkillFunctionEnum, SkillLevelEnum, SkillMetricsSchema, SkillSchema, WorkExperienceSchema
+};
+
+// Export types
+export type Entity = z.infer<typeof EntitySchema>;
+export type Relation = z.infer<typeof RelationSchema>;
+export type KnowledgeGraph = z.infer<typeof KnowledgeGraphSchema>;
 export type WorkExperience = z.infer<typeof WorkExperienceSchema>;
 export type EducationExperience = z.infer<typeof EducationExperienceSchema>;
 export type CareerBreak = z.infer<typeof CareerBreakSchema>;
@@ -265,3 +328,182 @@ export type Course = z.infer<typeof CourseSchema>;
 export type Reference = z.infer<typeof ReferenceSchema>;
 export type Organization = z.infer<typeof OrganizationSchema>;
 export type HonorOrAward = z.infer<typeof HonorOrAwardSchema>;
+export type SkillLevel = z.infer<typeof SkillLevelEnum>;
+export type EntityType = z.infer<typeof EntityTypeEnum>;
+export type ReferenceType = z.infer<typeof ReferenceTypeEnum>;
+export type ExperienceSkillRelation = z.infer<typeof ExperienceSkillRelationSchema>;
+export type ProjectExperienceRelation = z.infer<typeof ProjectExperienceRelationSchema>;
+export type CrossReferenceRelation = z.infer<typeof CrossReferenceRelationSchema>;
+export type ContributionExperienceRelation = z.infer<typeof ContributionExperienceRelationSchema>;
+export type SkillCategory = z.infer<typeof SkillCategoryEnum>;
+export type SkillFunction = z.infer<typeof SkillFunctionEnum>;
+export type ProjectScale = z.infer<typeof ProjectScaleEnum>;
+
+// Core enums and types
+export const PROFICIENCY_LEVELS = [
+  'Junior',
+  'Mid',
+  'Senior',
+  'Lead',
+  'Expert'
+] as const;
+
+export type ProficiencyLevel = (typeof PROFICIENCY_LEVELS)[number];
+
+export const IMPACT_LEVELS = [
+  'Individual',
+  'Team',
+  'Department',
+  'Organization',
+  'Industry'
+] as const;
+
+export type ImpactLevel = (typeof IMPACT_LEVELS)[number];
+
+export const BUSINESS_VALUES = [
+  'Cost Reduction',
+  'Revenue Growth',
+  'Process Improvement',
+  'Innovation',
+  'Risk Mitigation',
+  'Customer Satisfaction',
+  'Market Expansion'
+] as const;
+
+export type BusinessValue = (typeof BUSINESS_VALUES)[number];
+
+export const DELIVERABLE_TYPES = [
+  'Code',
+  'Design',
+  'Documentation',
+  'Process',
+  'Research'
+] as const;
+
+export type DeliverableType = (typeof DELIVERABLE_TYPES)[number];
+
+export const IMPLEMENTATION_SCOPES = [
+  'Component',
+  'Service',
+  'System',
+  'Platform',
+  'Enterprise'
+] as const;
+
+export type ImplementationScope = (typeof IMPLEMENTATION_SCOPES)[number];
+
+// Zod Schemas
+export const ProficiencyLevelSchema = z.enum(PROFICIENCY_LEVELS);
+export const ImpactLevelSchema = z.enum(IMPACT_LEVELS);
+export const BusinessValueSchema = z.enum(BUSINESS_VALUES);
+export const DeliverableTypeSchema = z.enum(DELIVERABLE_TYPES);
+export const ImplementationScopeSchema = z.enum(IMPLEMENTATION_SCOPES);
+
+// Interface definitions
+export interface SearchFilter {
+  excludeTypes?: string[];
+  minScore?: number;
+  timeframe?: {
+    start: string;
+    end: string;
+  };
+  technologies?: string[];
+  impactLevel?: ImpactLevel;
+}
+
+export const SearchFilterSchema = z.object({
+  excludeTypes: z.array(z.string()).optional(),
+  minScore: z.number().min(0).max(1).optional(),
+  timeframe: z.object({
+    start: z.string(),
+    end: z.string()
+  }).optional(),
+  technologies: z.array(z.string()).optional(),
+  impactLevel: ImpactLevelSchema.optional()
+});
+
+export interface SearchResult {
+  type: string;
+  item: Achievement | TechnicalImplementation | DomainExpertise | ProfessionalContribution;
+  score: number;
+}
+
+export interface Achievement {
+  title: string;
+  description: string;
+  impactLevel: ImpactLevel;
+  businessValue: BusinessValue[];
+  deliverableType: DeliverableType;
+  metrics: {
+    quantitative: string[];
+    qualitative: string[];
+  };
+}
+
+export interface TechnicalImplementation {
+  name: string;
+  description: string;
+  technologies: string[];
+  proficiencyLevel: ProficiencyLevel;
+  scope: ImplementationScope;
+}
+
+export interface DomainExpertise {
+  domain: string;
+  category: string;
+  level: ProficiencyLevel;
+  specializations: string[];
+}
+
+export interface ProfessionalContribution {
+  title: string;
+  description: string;
+  impact: ImpactLevel;
+  type: string;
+}
+
+// Update existing interfaces to use the new enums
+export interface TechnicalSkill {
+  name: string;
+  level: ProficiencyLevel;
+  yearsOfExperience: number;
+  lastUsed: string;
+}
+
+export interface ExperienceEntry {
+  role: string;
+  skills: TechnicalSkill[];
+  level: ProficiencyLevel;
+  startDate: string;
+  endDate?: string;
+}
+
+export interface SkillAssessment {
+  skillName: string;
+  currentLevel: ProficiencyLevel;
+  targetLevel: ProficiencyLevel;
+  gap: number;
+}
+
+// Update validation schemas
+export const TechnicalSkillSchema = z.object({
+  name: z.string(),
+  level: z.enum(PROFICIENCY_LEVELS),
+  yearsOfExperience: z.number(),
+  lastUsed: z.string()
+});
+
+export const ExperienceEntrySchema = z.object({
+  role: z.string(),
+  skills: z.array(TechnicalSkillSchema),
+  level: z.enum(PROFICIENCY_LEVELS),
+  startDate: z.string(),
+  endDate: z.string().optional()
+});
+
+export const SkillAssessmentSchema = z.object({
+  skillName: z.string(),
+  currentLevel: z.enum(PROFICIENCY_LEVELS),
+  targetLevel: z.enum(PROFICIENCY_LEVELS),
+  gap: z.number()
+});

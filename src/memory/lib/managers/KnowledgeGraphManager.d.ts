@@ -1,0 +1,34 @@
+import { type Achievement, type BusinessValue, type DomainExpertise, type ImpactLevel, type ProfessionalContribution, type ProficiencyLevel, type SearchFilter, type SearchResult, type TechnicalImplementation } from '../types';
+export declare class KnowledgeGraphManager {
+    private achievementManager;
+    private technicalImplementationManager;
+    private domainExpertiseManager;
+    private professionalContributionManager;
+    private relationManager;
+    private searchManager;
+    private graph;
+    constructor();
+    addAchievement(achievement: Achievement): Promise<void>;
+    searchAchievements(query: string): Promise<Achievement[]>;
+    addTechnicalImplementation(implementation: TechnicalImplementation): Promise<void>;
+    searchImplementations(query: string): Promise<TechnicalImplementation[]>;
+    addDomainExpertise(expertise: DomainExpertise): Promise<void>;
+    searchDomainExpertise(domain: string, category?: string, expertiseLevel?: ProficiencyLevel): Promise<SearchResult[]>;
+    addProfessionalContribution(contribution: ProfessionalContribution): Promise<void>;
+    searchProfessionalContributions(query: string): Promise<ProfessionalContribution[]>;
+    search(query: string, filters?: SearchFilter): Promise<SearchResult[]>;
+    searchByTechnology(technology: string, filters?: SearchFilter): Promise<SearchResult[]>;
+    searchByImpactLevel(level: ImpactLevel, businessValues?: BusinessValue[]): Promise<SearchResult[]>;
+    private isAchievement;
+    private isTechnicalImplementation;
+    private isDomainExpertise;
+    private isProfessionalContribution;
+    private applyFilters;
+    private hasTechnologies;
+    private matchesImpactLevel;
+    private matchesBusinessValues;
+    private isInTimeframe;
+    private convertLegacyProficiencyLevel;
+    private getProficiencyPrecedence;
+    private getProficiencyLevel;
+}

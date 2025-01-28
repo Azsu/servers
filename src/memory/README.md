@@ -1,130 +1,118 @@
 # Knowledge Graph Memory Server
-A basic implementation of persistent memory using a local knowledge graph. This lets Claude remember information about the user across chats.
+A sophisticated implementation of persistent memory using a local knowledge graph. This system enables Claude to maintain a rich, interconnected graph of information about the user across conversations.
 
 ## Core Concepts
 
 ### Entities
 Entities are the primary nodes in the knowledge graph. Each entity has:
 - A unique name (identifier)
-- An entity type (e.g., "person", "organization", "event")
+- An entity type (e.g., "person", "organization", "skill", "project")
 - A list of observations
+- Optional metadata (dates, descriptions, etc.)
 
 Example:
 ```json
 {
-  "name": "John_Smith",
-  "entityType": "person",
-  "observations": ["Speaks fluent Spanish"]
+  "name": "Python_Development",
+  "entityType": "skill",
+  "observations": ["Expert-level proficiency in Python development"],
+  "metadata": {
+    "startDate": "2018-01",
+    "description": "Full-stack Python development including Django and FastAPI"
+  }
 }
 ```
 
 ### Relations
-Relations define directed connections between entities. They are always stored in active voice and describe how entities interact or relate to each other.
+Relations define directed connections between entities. They are stored in active voice and describe how entities interact or relate to each other. Relations can include:
+- Source entity (from)
+- Target entity (to)
+- Relation type
+- Optional metadata (context, dates, etc.)
 
 Example:
 ```json
 {
-  "from": "John_Smith",
-  "to": "Anthropic",
-  "relationType": "works_at"
+  "from": "Senior_Developer_Role",
+  "to": "Python_Development",
+  "relationType": "HasSkill",
+  "metadata": {
+    "level": "EXPERT",
+    "context": "Led team of Python developers",
+    "startDate": "2020-01",
+    "endDate": "2023-06"
+  }
 }
 ```
-### Observations
-Observations are discrete pieces of information about an entity. They are:
 
-- Stored as strings
-- Attached to specific entities
-- Can be added or removed independently
-- Should be atomic (one fact per observation)
+### Enhanced Relation Types
 
-Example:
-```json
-{
-  "entityName": "John_Smith",
-  "observations": [
-    "Speaks fluent Spanish",
-    "Graduated in 2019",
-    "Prefers morning meetings"
-  ]
-}
-```
+#### Experience-Skill Relations
+Maps skills to specific work experiences with proficiency levels:
+- Links skills to work experiences
+- Tracks skill levels (BEGINNER, INTERMEDIATE, ADVANCED, EXPERT)
+- Includes context and duration
+- Enables skill progression tracking
+
+#### Project-Experience Relations
+Links projects to work experiences:
+- Connects projects to specific roles
+- Captures role and responsibilities
+- Tracks impact and outcomes
+- Builds project portfolio
+
+#### Cross-Reference Relations
+Creates connections between different entity types:
+- Supports various entity types (WORK_EXPERIENCE, PROJECT, SKILL, EDUCATION, CONTRIBUTION)
+- Defines relationship types (SUPPORTS, PREREQUISITES, LEADS_TO, RELATED)
+- Adds context to connections
+- Enables graph traversal
+
+#### Contribution-Experience Relations
+Links online contributions to work experiences:
+- Connects contributions to roles
+- Captures relevance and demonstrated skills
+- Builds evidence portfolio
+- Tracks skill demonstrations
 
 ## API
 
-### Tools
-- **create_entities**
-  - Create multiple new entities in the knowledge graph
-  - Input: `entities` (array of objects)
-    - Each object contains:
-      - `name` (string): Entity identifier
-      - `entityType` (string): Type classification
-      - `observations` (string[]): Associated observations
-  - Ignores entities with existing names
+### Entity Management
+- **create_entities**: Create multiple new entities
+- **delete_entities**: Remove entities and their relations
+- **add_observations**: Add observations to existing entities
+- **delete_observations**: Remove specific observations
+- **search_nodes**: Search across entity names, types, and observations
 
-- **create_relations**
-  - Create multiple new relations between entities
-  - Input: `relations` (array of objects)
-    - Each object contains:
-      - `from` (string): Source entity name
-      - `to` (string): Target entity name
-      - `relationType` (string): Relationship type in active voice
-  - Skips duplicate relations
+### Relation Management
+- **create_experience_skill_relation**: Link skills to work experiences
+- **create_project_experience_relation**: Connect projects to work experiences
+- **create_cross_reference_relation**: Create connections between any entities
+- **create_contribution_experience_relation**: Link contributions to experiences
 
-- **add_observations**
-  - Add new observations to existing entities
-  - Input: `observations` (array of objects)
-    - Each object contains:
-      - `entityName` (string): Target entity
-      - `contents` (string[]): New observations to add
-  - Returns added observations per entity
-  - Fails if entity doesn't exist
+### Querying
+- **get_skills_for_experience**: Get skills used in a work experience
+- **get_projects_for_experience**: Get projects associated with a role
+- **get_related_entities**: Find all entities connected to a specific entity
+- **get_contributions_for_experience**: Get contributions from a work experience
+- **calculate_experience**: Calculate total experience with a technology
+- **calculate_skill_metrics**: Get detailed metrics for a skill
 
-- **delete_entities**
-  - Remove entities and their relations
-  - Input: `entityNames` (string[])
-  - Cascading deletion of associated relations
-  - Silent operation if entity doesn't exist
+### Experience Types
+The system supports various types of experiences:
+- Work Experience
+- Education Experience
+- Career Breaks
+- Projects
+- Online Contributions
+- Licenses & Certifications
+- Courses
+- Organizations
+- Honors & Awards
 
-- **delete_observations**
-  - Remove specific observations from entities
-  - Input: `deletions` (array of objects)
-    - Each object contains:
-      - `entityName` (string): Target entity
-      - `observations` (string[]): Observations to remove
-  - Silent operation if observation doesn't exist
+Each type has specific attributes and can be interconnected through relations.
 
-- **delete_relations**
-  - Remove specific relations from the graph
-  - Input: `relations` (array of objects)
-    - Each object contains:
-      - `from` (string): Source entity name
-      - `to` (string): Target entity name
-      - `relationType` (string): Relationship type
-  - Silent operation if relation doesn't exist
-
-- **read_graph**
-  - Read the entire knowledge graph
-  - No input required
-  - Returns complete graph structure with all entities and relations
-
-- **search_nodes**
-  - Search for nodes based on query
-  - Input: `query` (string)
-  - Searches across:
-    - Entity names
-    - Entity types
-    - Observation content
-  - Returns matching entities and their relations
-
-- **open_nodes**
-  - Retrieve specific nodes by name
-  - Input: `names` (string[])
-  - Returns:
-    - Requested entities
-    - Relations between requested entities
-  - Silently skips non-existent nodes
-
-# Usage with Claude Desktop
+## Usage with Claude Desktop
 
 ### Setup
 
@@ -162,7 +150,7 @@ Add this to your claude_desktop_config.json:
 
 The prompt for utilizing memory depends on the use case. Changing the prompt will help the model determine the frequency and types of memories created.
 
-Here is an example prompt for chat personalization. You could use this prompt in the "Custom Instructions" field of a [Claude.ai Project](https://www.anthropic.com/news/projects). 
+Here is an example prompt for chat personalization. You could use this prompt in the "Custom Instructions" field of a [Claude.ai Project](https://www.anthropic.com/news/projects).
 
 ```
 Follow these steps for each interaction:
@@ -195,7 +183,7 @@ Follow these steps for each interaction:
 Docker:
 
 ```sh
-docker build -t mcp/memory -f src/memory/Dockerfile . 
+docker build -t mcp/memory -f src/memory/Dockerfile .
 ```
 
 ## License
