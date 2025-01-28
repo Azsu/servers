@@ -5,7 +5,14 @@ import {
     SearchFilter,
     SearchResult,
     TechnicalImplementation
-} from '../types';
+} from '../types.js';
+
+// Import manager types
+import { AchievementManager } from './AchievementManager.js';
+import { DomainExpertiseManager } from './DomainExpertiseManager.js';
+import { ProfessionalContributionManager } from './ProfessionalContributionManager.js';
+import { RelationManager } from './RelationManager.js';
+import { TechnicalImplementationManager } from './TechnicalImplementationManager.js';
 
 export class SearchManager {
     constructor(
@@ -103,6 +110,21 @@ export class SearchManager {
         return [];
     }
 
+    private async searchImplementationsByTechnology(technology: string): Promise<SearchResult[]> {
+        // Implementation
+        return [];
+    }
+
+    private async findRelatedTechnologies(technology: string): Promise<string[]> {
+        // Implementation
+        return [];
+    }
+
+    private async searchAchievementsByImpact(level: ImpactLevel): Promise<SearchResult[]> {
+        // Implementation
+        return [];
+    }
+
     private rankResults(results: SearchResult[]): SearchResult[] {
         return results.sort((a, b) => b.score - a.score);
     }
@@ -134,7 +156,13 @@ export class SearchManager {
                 score *= this.calculateAchievementScore(item as Achievement);
                 break;
             case 'implementation':
-                score *= this.calculateImplementationScore(item as TechnicalImplementation);
+                score *= this.calculateImplementationScore(item as TechnicalImplementation & {
+                    architecture: {
+                        patterns: string[];
+                        technologies: string[];
+                    };
+                    challenges: string[];
+                });
                 break;
             // ... other types
         }
@@ -161,7 +189,13 @@ export class SearchManager {
         return score;
     }
 
-    private calculateImplementationScore(implementation: TechnicalImplementation): number {
+    private calculateImplementationScore(implementation: TechnicalImplementation & {
+        architecture: {
+            patterns: string[];
+            technologies: string[];
+        };
+        challenges: string[];
+    }): number {
         let score = 1.0;
 
         // Architecture completeness

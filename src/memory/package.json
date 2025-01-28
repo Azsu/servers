@@ -15,9 +15,10 @@
   ],
   "scripts": {
     "clean": "rm -rf lib",
-    "build": "npm run clean && tsc --project /app/memory/tsconfig.json && mkdir -p lib && shx chmod +x lib/*.js",
+    "build": "tsc --project tsconfig.json",
     "prepare": "npm run build",
-    "watch": "tsc --watch"
+    "watch": "tsc --watch",
+    "start": "node lib/index.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.0.1",

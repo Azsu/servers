@@ -7,7 +7,7 @@ import os from 'os';
 import path from 'path';
 import { z } from 'zod';
 import { KnowledgeGraphManager } from './managers/KnowledgeGraphManager.js';
-import { RelationManager } from './relation-manager.js';
+import { RelationManager } from './managers/RelationManager.js';
 import {
   BusinessValueSchema,
   ImpactLevelSchema,

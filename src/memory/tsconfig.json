@@ -2,11 +2,11 @@
   "compilerOptions": {
     "target": "ES2022",
     "outDir": "./lib",
-    "rootDir": ".",
+    "rootDir": "./src",
     "declaration": true,
     "composite": true,
-    "module": "ESNext",
-    "moduleResolution": "bundler",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -18,8 +18,7 @@
     ]
   },
   "include": [
-    "*.ts",
-    "managers/**/*.ts"
+    "src/**/*.ts"
   ],
   "exclude": [
     "node_modules",

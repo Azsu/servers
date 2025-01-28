@@ -507,3 +507,256 @@ export const SkillAssessmentSchema = z.object({
   targetLevel: z.enum(PROFICIENCY_LEVELS),
   gap: z.number()
 });
+
+// Request schemas for manager operations
+export const UpdateExperienceRequestSchema = z.object({
+  id: z.string(),
+  experience: WorkExperienceSchema
+});
+
+export const DeleteExperienceRequestSchema = z.object({
+  id: z.string()
+});
+
+export const FilterExperienceRequestSchema = z.object({
+  dateRange: z.object({
+    startDate: z.string(),
+    endDate: z.string()
+  }).optional(),
+  company: z.string().optional()
+});
+
+export const UpdateAchievementRequestSchema = z.object({
+  id: z.string(),
+  achievement: z.object({
+    title: z.string(),
+    description: z.string(),
+    impactLevel: ImpactLevelSchema,
+    businessValue: z.array(BusinessValueSchema),
+    deliverableType: DeliverableTypeSchema,
+    metrics: z.object({
+      quantitative: z.array(z.string()),
+      qualitative: z.array(z.string())
+    })
+  })
+});
+
+export const DeleteAchievementRequestSchema = z.object({
+  id: z.string()
+});
+
+export const UpdateImplementationRequestSchema = z.object({
+  id: z.string(),
+  implementation: z.object({
+    name: z.string(),
+    description: z.string(),
+    technologies: z.array(z.string()),
+    proficiencyLevel: ProficiencyLevelSchema,
+    scope: ImplementationScopeSchema
+  }),
+  experienceId: z.string().optional()
+});
+
+export const DeleteImplementationRequestSchema = z.object({
+  id: z.string()
+});
+
+export const UpdateDomainRequestSchema = z.object({
+  id: z.string(),
+  domain: z.object({
+    domain: z.string(),
+    category: z.string(),
+    level: ProficiencyLevelSchema,
+    specializations: z.array(z.string())
+  })
+});
+
+export const DeleteDomainRequestSchema = z.object({
+  id: z.string()
+});
+
+// Response schemas
+export const ExperienceResponseSchema = z.object({
+  id: z.string(),
+  experience: WorkExperienceSchema
+});
+
+export const AchievementResponseSchema = z.object({
+  id: z.string(),
+  achievement: z.object({
+    title: z.string(),
+    description: z.string(),
+    impactLevel: ImpactLevelSchema,
+    businessValue: z.array(BusinessValueSchema),
+    deliverableType: DeliverableTypeSchema,
+    metrics: z.object({
+      quantitative: z.array(z.string()),
+      qualitative: z.array(z.string())
+    })
+  })
+});
+
+export const ImplementationResponseSchema = z.object({
+  id: z.string(),
+  implementation: z.object({
+    name: z.string(),
+    description: z.string(),
+    technologies: z.array(z.string()),
+    proficiencyLevel: ProficiencyLevelSchema,
+    scope: ImplementationScopeSchema
+  })
+});
+
+export const DomainResponseSchema = z.object({
+  id: z.string(),
+  domain: z.object({
+    domain: z.string(),
+    category: z.string(),
+    level: ProficiencyLevelSchema,
+    specializations: z.array(z.string())
+  })
+});
+
+// Export types for request/response schemas
+export type UpdateExperienceRequest = z.infer<typeof UpdateExperienceRequestSchema>;
+export type DeleteExperienceRequest = z.infer<typeof DeleteExperienceRequestSchema>;
+export type FilterExperienceRequest = z.infer<typeof FilterExperienceRequestSchema>;
+export type UpdateAchievementRequest = z.infer<typeof UpdateAchievementRequestSchema>;
+export type DeleteAchievementRequest = z.infer<typeof DeleteAchievementRequestSchema>;
+export type UpdateImplementationRequest = z.infer<typeof UpdateImplementationRequestSchema>;
+export type DeleteImplementationRequest = z.infer<typeof DeleteImplementationRequestSchema>;
+export type UpdateDomainRequest = z.infer<typeof UpdateDomainRequestSchema>;
+export type DeleteDomainRequest = z.infer<typeof DeleteDomainRequestSchema>;
+
+export type ExperienceResponse = z.infer<typeof ExperienceResponseSchema>;
+export type AchievementResponse = z.infer<typeof AchievementResponseSchema>;
+export type ImplementationResponse = z.infer<typeof ImplementationResponseSchema>;
+export type DomainResponse = z.infer<typeof DomainResponseSchema>;
+
+// Search and filter schemas
+export const SearchRequestSchema = z.object({
+  query: z.string(),
+  filters: SearchFilterSchema.optional()
+});
+
+export const SearchByTechnologyRequestSchema = z.object({
+  technology: z.string(),
+  filters: SearchFilterSchema.optional()
+});
+
+export const SearchByImpactRequestSchema = z.object({
+  level: ImpactLevelSchema,
+  businessValues: z.array(BusinessValueSchema).optional()
+});
+
+export const SearchExperienceRequestSchema = z.object({
+  query: z.string().optional(),
+  dateRange: z.object({
+    startDate: z.string(),
+    endDate: z.string()
+  }).optional(),
+  company: z.string().optional(),
+  currentOnly: z.boolean().optional()
+});
+
+export const SearchImplementationRequestSchema = z.object({
+  query: z.string().optional(),
+  technology: z.string().optional(),
+  proficiencyLevel: ProficiencyLevelSchema.optional(),
+  scope: ImplementationScopeSchema.optional()
+});
+
+export const SearchDomainRequestSchema = z.object({
+  query: z.string().optional(),
+  category: z.string().optional(),
+  level: ProficiencyLevelSchema.optional()
+});
+
+// Search result schema
+export const SearchResultSchema = z.object({
+  type: z.string(),
+  item: z.union([
+    z.lazy(() => AchievementResponseSchema),
+    z.lazy(() => ImplementationResponseSchema),
+    z.lazy(() => DomainResponseSchema),
+    z.lazy(() => ExperienceResponseSchema)
+  ]),
+  score: z.number()
+});
+
+// Search response schemas
+export const SearchResponseSchema = z.array(SearchResultSchema);
+
+export const SearchExperienceResponseSchema = z.array(ExperienceResponseSchema);
+export const SearchImplementationResponseSchema = z.array(ImplementationResponseSchema);
+export const SearchDomainResponseSchema = z.array(DomainResponseSchema);
+
+// Export search types
+export type SearchRequest = z.infer<typeof SearchRequestSchema>;
+export type SearchByTechnologyRequest = z.infer<typeof SearchByTechnologyRequestSchema>;
+export type SearchByImpactRequest = z.infer<typeof SearchByImpactRequestSchema>;
+export type SearchExperienceRequest = z.infer<typeof SearchExperienceRequestSchema>;
+export type SearchImplementationRequest = z.infer<typeof SearchImplementationRequestSchema>;
+export type SearchDomainRequest = z.infer<typeof SearchDomainRequestSchema>;
+
+export type SearchResponse = z.infer<typeof SearchResponseSchema>;
+export type SearchExperienceResponse = z.infer<typeof SearchExperienceResponseSchema>;
+export type SearchImplementationResponse = z.infer<typeof SearchImplementationResponseSchema>;
+export type SearchDomainResponse = z.infer<typeof SearchDomainResponseSchema>;
+
+// Relation schemas
+export const RelationTypeSchema = z.enum([
+  'implements',
+  'uses',
+  'requires',
+  'contributes_to',
+  'ACHIEVEMENT_EXPERIENCE',
+  'IMPLEMENTATION_EXPERIENCE',
+  'DOMAIN_SKILL',
+  'CONTRIBUTION_DOMAIN',
+  'IMPLEMENTATION_TECHNOLOGY',
+  'SKILL_USAGE',
+  'HAS_IMPACT',
+  'HAS_TYPE',
+  'HAS_PROFICIENCY',
+  'HAS_SCOPE',
+  'WORKS_AT',
+  'LOCATED_AT'
+]);
+
+export const CreateRelationRequestSchema = z.object({
+  from: z.string(),
+  to: z.string(),
+  type: RelationTypeSchema,
+  metadata: z.object({
+    startDate: z.string().optional(),
+    endDate: z.string().optional(),
+    duration: z.number().optional(),
+    description: z.string().optional(),
+    level: z.string().optional(),
+    context: z.string().optional(),
+    role: z.string().optional(),
+    impact: z.string().optional(),
+    responsibilities: z.array(z.string()).optional(),
+    relevance: z.string().optional(),
+    skills: z.array(z.string()).optional()
+  }).optional()
+});
+
+export const DeleteRelationRequestSchema = z.object({
+  from: z.string(),
+  to: z.string(),
+  type: RelationTypeSchema
+});
+
+export const GetRelationsRequestSchema = z.object({
+  entityId: z.string(),
+  type: RelationTypeSchema.optional(),
+  direction: z.enum(['incoming', 'outgoing', 'both']).optional()
+});
+
+// Export relation types
+export type RelationType = z.infer<typeof RelationTypeSchema>;
+export type CreateRelationRequest = z.infer<typeof CreateRelationRequestSchema>;
+export type DeleteRelationRequest = z.infer<typeof DeleteRelationRequestSchema>;
+export type GetRelationsRequest = z.infer<typeof GetRelationsRequestSchema>;

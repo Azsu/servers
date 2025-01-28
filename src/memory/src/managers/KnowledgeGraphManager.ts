@@ -17,6 +17,7 @@ import { ProfessionalContributionManager } from './ProfessionalContributionManag
 import { RelationManager } from './RelationManager.js';
 import { SearchManager } from './SearchManager.js';
 import { TechnicalImplementationManager } from './TechnicalImplementationManager.js';
+import { WorkExperienceManager } from './WorkExperienceManager.js';
 
 export class KnowledgeGraphManager {
     private achievementManager: AchievementManager;
@@ -26,13 +27,18 @@ export class KnowledgeGraphManager {
     private relationManager: RelationManager;
     private searchManager: SearchManager;
     private graph: GraphOperations;
+    private workExperienceManager: WorkExperienceManager;
 
     constructor() {
-        this.achievementManager = new AchievementManager();
-        this.technicalImplementationManager = new TechnicalImplementationManager();
-        this.domainExpertiseManager = new DomainExpertiseManager();
-        this.professionalContributionManager = new ProfessionalContributionManager();
         this.relationManager = new RelationManager();
+        this.workExperienceManager = new WorkExperienceManager(this.relationManager);
+        this.achievementManager = new AchievementManager(this.relationManager);
+        this.technicalImplementationManager = new TechnicalImplementationManager(
+            this.relationManager,
+            this.workExperienceManager
+        );
+        this.domainExpertiseManager = new DomainExpertiseManager(this.relationManager);
+        this.professionalContributionManager = new ProfessionalContributionManager(this.relationManager);
         this.searchManager = new SearchManager(
             this.achievementManager,
             this.technicalImplementationManager,
@@ -62,7 +68,8 @@ export class KnowledgeGraphManager {
     }
 
     async searchAchievements(query: string): Promise<Achievement[]> {
-        return this.achievementManager.searchAchievements(query);
+        const searchTerms = query.toLowerCase().split(' ');
+        return this.achievementManager.searchAchievements(searchTerms);
     }
 
     // Methods for technical implementations
@@ -151,10 +158,11 @@ export class KnowledgeGraphManager {
         try
         {
             const results = await this.searchManager.searchAcrossEntities(query);
-            return this.applyFilters(results, filters);
+            return await this.applyFilters(results, filters);
         } catch (error)
         {
-            throw new Error(`Search failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            throw new Error(`Search failed: ${errorMessage}`);
         }
     }
 
@@ -162,10 +170,11 @@ export class KnowledgeGraphManager {
         try
         {
             const results = await this.searchManager.searchByTechnology(technology);
-            return this.applyFilters(results, filters);
+            return await this.applyFilters(results, filters);
         } catch (error)
         {
-            throw new Error(`Technology search failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            throw new Error(`Technology search failed: ${errorMessage}`);
         }
     }
 
@@ -183,7 +192,8 @@ export class KnowledgeGraphManager {
             return results;
         } catch (error)
         {
-            throw new Error(`Impact level search failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            throw new Error(`Impact level search failed: ${errorMessage}`);
         }
     }
 
@@ -205,16 +215,19 @@ export class KnowledgeGraphManager {
     }
 
     // Helper methods
-    private applyFilters(results: SearchResult[], filters?: SearchFilter): SearchResult[] {
+    private async applyFilters(results: SearchResult[], filters?: SearchFilter): Promise<SearchResult[]> {
         if (!filters) return results;
 
-        return results.filter(result => {
-            if (filters.minScore && result.score < filters.minScore) return false;
-            if (filters.technologies && !this.hasTechnologies(result)) return false;
-            if (filters.impactLevel && !this.matchesImpactLevel(result, filters.impactLevel)) return false;
-            if (filters.timeframe && !this.isInTimeframe(result, filters.timeframe)) return false;
-            return true;
-        });
+        const filteredResults = [];
+        for (const result of results)
+        {
+            if (filters.minScore && result.score < filters.minScore) continue;
+            if (filters.technologies && !this.hasTechnologies(result)) continue;
+            if (filters.impactLevel && !this.matchesImpactLevel(result, filters.impactLevel)) continue;
+            if (filters.timeframe && !(await this.isInTimeframe(result, filters.timeframe))) continue;
+            filteredResults.push(result);
+        }
+        return filteredResults;
     }
 
     private hasTechnologies(result: SearchResult): boolean {
@@ -231,9 +244,64 @@ export class KnowledgeGraphManager {
         return businessValues.some(value => achievement.businessValue.includes(value));
     }
 
-    private isInTimeframe(result: SearchResult, timeframe: { start: string; end: string }): boolean {
-        // Implementation depends on your data structure
-        return true;
+    private async isInTimeframe(result: SearchResult, timeframe: { start: string; end: string }): Promise<boolean> {
+        if (!timeframe.start || !timeframe.end)
+        {
+            return false;
+        }
+
+        const startTimestamp = Date.parse(timeframe.start);
+        const endTimestamp = Date.parse(timeframe.end);
+        if (isNaN(startTimestamp) || isNaN(endTimestamp))
+        {
+            return false;
+        }
+
+        const startDate = new Date(startTimestamp);
+        const endDate = new Date(endTimestamp);
+
+        // Get entity name based on type
+        let entityName = '';
+        if (this.isAchievement(result.item))
+        {
+            entityName = result.item.title;
+        } else if (this.isTechnicalImplementation(result.item))
+        {
+            entityName = result.item.name;
+        } else if (this.isDomainExpertise(result.item))
+        {
+            entityName = result.item.domain;
+        } else if (this.isProfessionalContribution(result.item))
+        {
+            entityName = result.item.title;
+        }
+
+        if (!entityName)
+        {
+            return false;
+        }
+
+        try
+        {
+            const graph = await this.graph.openNodes([entityName]);
+            const entity = graph.entities.find(e => e.name === entityName);
+            if (!entity?.metadata?.startDate)
+            {
+                return false;
+            }
+
+            const itemTimestamp = Date.parse(entity.metadata.startDate);
+            if (isNaN(itemTimestamp))
+            {
+                return false;
+            }
+            const itemDate = new Date(itemTimestamp);
+            return itemDate >= startDate && itemDate <= endDate;
+        } catch (error)
+        {
+            console.error(`Error checking timeframe for ${entityName}:`, error);
+            return false;
+        }
     }
 
     private convertLegacyProficiencyLevel(level: string): ProficiencyLevel {

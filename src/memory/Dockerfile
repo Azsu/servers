@@ -5,7 +5,7 @@ WORKDIR /app/memory
 # Copy only necessary files from the memory server directory
 COPY src/memory/package*.json ./
 COPY src/memory/tsconfig.json ./
-COPY src/memory/*.ts ./
+COPY src/memory/src ./src
 
 ENV PATH="/usr/local/bin:${PATH}"
 

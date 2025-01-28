@@ -1,6 +1,9 @@
-import { type ProfessionalContribution } from '../types';
+import { ProfessionalContribution } from '../types.js';
+import { RelationManager } from './RelationManager.js';
 
 export class ProfessionalContributionManager {
+    constructor(private relationManager: RelationManager) { }
+
     private contributions: Map<string, ProfessionalContribution> = new Map();
 
     async addContribution(contributions: ProfessionalContribution[]): Promise<ProfessionalContribution[]> {
@@ -8,6 +11,7 @@ export class ProfessionalContributionManager {
         {
             const id = this.generateId(contribution.title);
             this.contributions.set(id, contribution);
+            await this.createContributionRelationships(id, contribution);
         }
         return contributions;
     }
@@ -24,10 +28,11 @@ export class ProfessionalContributionManager {
             .filter(contribution => contribution.type === type);
     }
 
-    async getContributionsByTopic(topic: string): Promise<ProfessionalContribution[]> {
+    async getContributionsByDescription(searchText: string): Promise<ProfessionalContribution[]> {
+        const searchLower = searchText.toLowerCase();
         return Array.from(this.contributions.values())
             .filter(contribution =>
-                contribution.technical_depth.topics.includes(topic)
+                contribution.description.toLowerCase().includes(searchLower)
             );
     }
 
@@ -50,7 +55,18 @@ export class ProfessionalContributionManager {
         contributionId: string,
         contribution: ProfessionalContribution
     ): Promise<void> {
-        // Create relationships with skills, technologies, and domains
-        // This would integrate with the RelationManager
+        // Create impact level relationship
+        await this.relationManager.createRelation(
+            contributionId,
+            contribution.impact,
+            'HAS_IMPACT'
+        );
+
+        // Create type relationship
+        await this.relationManager.createRelation(
+            contributionId,
+            contribution.type,
+            'HAS_TYPE'
+        );
     }
 }
