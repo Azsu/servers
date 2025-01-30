@@ -1,3 +1,60 @@
+/**
+ * @file AchievementManager.ts
+ * @description Manager for achievement entities and their relationships
+ *
+ * @baseClassUsage
+ * - CRUD operations (create/read/update/delete)
+ * - Relation management (createEntityRelation)
+ * - Impact level tracking
+ * - Business value tracking
+ *
+ * @specialization
+ * - Achievement tracking
+ * - Impact level classification
+ * - Business value assessment
+ * - Deliverable type management
+ * - Metric tracking (quantitative/qualitative)
+ * - Achievement search and filtering
+ *
+ * @important
+ * This manager implements achievement-based functionality:
+ * - Impact level classification
+ * - Business value tracking
+ * - Deliverable type management
+ * - Metric tracking and analysis
+ * - Achievement relationship management
+ *
+ * @inheritance
+ * Direct implementation with RelationManager:
+ * - Focused on achievement-specific functionality
+ * - Manages impact levels and business value
+ * - Handles metric tracking
+ * - Supports achievement relationships
+ *
+ * @usage
+ * // Create new achievement
+ * manager.addAchievement({
+ *   title: "Project Success",
+ *   description: "Led successful project delivery",
+ *   impactLevel: "HIGH",
+ *   businessValue: ["Revenue Growth", "Customer Satisfaction"],
+ *   deliverableType: "Project",
+ *   metrics: {
+ *     quantitative: ["20% revenue increase"],
+ *     qualitative: ["Improved team collaboration"]
+ *   }
+ * });
+ *
+ * // Update achievement
+ * await manager.updateAchievement(id, updatedAchievement);
+ *
+ * // Search achievements
+ * const results = manager.searchAchievements(["revenue", "growth"]);
+ *
+ * // Filter by impact
+ * const highImpact = manager.getAchievementsByImpact("HIGH");
+ */
+
 import { Achievement, ImpactLevel } from '../types.js';
 import { RELATION_TYPES, RelationManager } from './RelationManager.js';
 

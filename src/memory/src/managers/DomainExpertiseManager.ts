@@ -1,3 +1,44 @@
+/**
+ * @file DomainExpertiseManager.ts
+ * @description Manager for domain expertise and specializations
+ *
+ * @baseClassUsage
+ * - CRUD operations for domain expertise
+ * - Relation management with specializations
+ * - Proficiency level tracking
+ * - Category management
+ *
+ * @specialization
+ * - Domain expertise tracking
+ * - Specialization management
+ * - Proficiency assessment
+ * - Domain categorization
+ * - Expertise search and filtering
+ * - Relationship mapping
+ *
+ * @important
+ * This manager implements domain expertise functionality:
+ * - Domain and specialization tracking
+ * - Proficiency level management
+ * - Category-based organization
+ * - Expertise relationship mapping
+ *
+ * @usage
+ * // Add domain expertise
+ * manager.addDomain({
+ *   domain: "Software Architecture",
+ *   category: "Technical",
+ *   level: "Expert",
+ *   specializations: ["Microservices", "Cloud Native"]
+ * });
+ *
+ * // Update domain
+ * await manager.updateDomain(id, updatedDomain);
+ *
+ * // Search domains
+ * const results = manager.searchDomains("architecture cloud");
+ */
+
 import { DomainExpertise } from '../types.js';
 import { RELATION_TYPES, RelationManager } from './RelationManager.js';
 

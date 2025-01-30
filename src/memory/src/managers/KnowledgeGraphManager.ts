@@ -1,55 +1,285 @@
+/**
+ * @file KnowledgeGraphManager.ts
+ * @description Central manager coordinating all entity managers and graph operations
+ *
+ * @baseClassUsage
+ * - Coordinates all specialized entity managers
+ * - Manages graph-wide operations
+ * - Handles cross-entity relationships
+ * - Provides unified search interface
+ *
+ * @specialization
+ * - Work experience tracking
+ * - Education management
+ * - Skills and expertise
+ * - Projects and contributions
+ * - Certifications and honors
+ * - Career breaks
+ * - Professional references
+ *
+ * @important
+ * This manager serves as the central coordinator:
+ * - Delegates operations to specialized managers
+ * - Maintains graph consistency
+ * - Handles cross-entity relationships
+ * - Provides unified search and filtering
+ * - Manages entity lifecycle
+ *
+ * @usage
+ * // Add work experience
+ * await manager.addWorkExperience({
+ *   title: "Software Engineer",
+ *   company: "Tech Corp"
+ * });
+ *
+ * // Add education
+ * await manager.addEducation({
+ *   school: "University",
+ *   degree: "Computer Science"
+ * });
+ *
+ * // Search across all entities
+ * const results = await manager.searchManager.search("software");
+ */
+
 import { GraphOperations } from '../graph-operations.js';
 import {
+    PROFICIENCY_LEVELS,
     type Achievement,
     type BusinessValue,
+    type CareerBreak,
+    type Course,
     type DomainExpertise,
+    type EducationExperience,
+    type HonorOrAward,
     type ImpactLevel,
+    type LicenseOrCertification,
+    type OnlineContribution,
+    type Organization,
     type ProfessionalContribution,
-    PROFICIENCY_LEVELS,
     type ProficiencyLevel,
+    type Project,
+    type Reference,
     type SearchFilter,
     type SearchResult,
-    type TechnicalImplementation
+    type Skill,
+    type TechnicalImplementation,
+    type WorkExperience
 } from '../types.js';
 import { AchievementManager } from './AchievementManager.js';
+import { CareerBreakManager } from './CareerBreakManager.js';
+import { CertificationManager } from './CertificationManager.js';
+import { ContributionManager } from './ContributionManager.js';
+import { CourseManager } from './CourseManager.js';
 import { DomainExpertiseManager } from './DomainExpertiseManager.js';
-import { ProfessionalContributionManager } from './ProfessionalContributionManager.js';
+import { EducationManager } from './EducationManager.js';
+import { HonorManager } from './HonorManager.js';
+import { OrganizationManager } from './OrganizationManager.js';
+import { ProjectManager } from './ProjectManager.js';
+import { ReferenceManager } from './ReferenceManager.js';
 import { RelationManager } from './RelationManager.js';
 import { SearchManager } from './SearchManager.js';
+import { SkillManager } from './SkillManager.js';
 import { TechnicalImplementationManager } from './TechnicalImplementationManager.js';
 import { WorkExperienceManager } from './WorkExperienceManager.js';
 
 export class KnowledgeGraphManager {
-    private achievementManager: AchievementManager;
-    private technicalImplementationManager: TechnicalImplementationManager;
-    private domainExpertiseManager: DomainExpertiseManager;
-    private professionalContributionManager: ProfessionalContributionManager;
     private relationManager: RelationManager;
+    private workExperienceManager: WorkExperienceManager;
+    private educationManager: EducationManager;
+    private skillManager: SkillManager;
+    private achievementManager: AchievementManager;
+    private careerBreakManager: CareerBreakManager;
+    private certificationManager: CertificationManager;
+    private contributionManager: ContributionManager;
+    private courseManager: CourseManager;
+    private domainExpertiseManager: DomainExpertiseManager;
+    private honorManager: HonorManager;
+    private organizationManager: OrganizationManager;
+    private projectManager: ProjectManager;
+    private referenceManager: ReferenceManager;
+    private technicalImplementationManager: TechnicalImplementationManager;
     private searchManager: SearchManager;
     private graph: GraphOperations;
-    private workExperienceManager: WorkExperienceManager;
 
-    constructor() {
-        this.relationManager = new RelationManager();
+    constructor(
+        graph: GraphOperations,
+        contributionManager: ContributionManager,
+        achievementManager: AchievementManager,
+        technicalImplementationManager: TechnicalImplementationManager,
+        domainExpertiseManager: DomainExpertiseManager,
+        relationManager: RelationManager
+    ) {
+        this.relationManager = relationManager;
         this.workExperienceManager = new WorkExperienceManager(this.relationManager);
-        this.achievementManager = new AchievementManager(this.relationManager);
-        this.technicalImplementationManager = new TechnicalImplementationManager(
-            this.relationManager,
-            this.workExperienceManager
-        );
-        this.domainExpertiseManager = new DomainExpertiseManager(this.relationManager);
-        this.professionalContributionManager = new ProfessionalContributionManager(this.relationManager);
+        this.educationManager = new EducationManager(this.relationManager);
+        this.skillManager = new SkillManager(this.relationManager);
+        this.achievementManager = achievementManager;
+        this.careerBreakManager = new CareerBreakManager(this.relationManager);
+        this.certificationManager = new CertificationManager(this.relationManager);
+        this.contributionManager = contributionManager;
+        this.courseManager = new CourseManager(this.relationManager);
+        this.domainExpertiseManager = domainExpertiseManager;
+        this.honorManager = new HonorManager(this.relationManager);
+        this.organizationManager = new OrganizationManager(this.relationManager);
+        this.projectManager = new ProjectManager(this.relationManager);
+        this.referenceManager = new ReferenceManager(this.relationManager);
+        this.technicalImplementationManager = technicalImplementationManager;
         this.searchManager = new SearchManager(
             this.achievementManager,
             this.technicalImplementationManager,
             this.domainExpertiseManager,
-            this.professionalContributionManager,
+            this.contributionManager,
             this.relationManager
         );
-        this.graph = new GraphOperations();
+        this.graph = graph;
     }
 
-    // Methods for achievements
+    // Work Experience methods
+    async addWorkExperience(experience: WorkExperience): Promise<void> {
+        return this.workExperienceManager.addWorkExperience(experience);
+    }
+
+    async searchWorkExperiences(query: string): Promise<WorkExperience[]> {
+        return this.workExperienceManager.searchWorkExperiences(query);
+    }
+
+    // Education methods
+    async addEducation(education: EducationExperience): Promise<void> {
+        return this.educationManager.addEducation(education);
+    }
+
+    async searchEducation(query: string): Promise<EducationExperience[]> {
+        return this.educationManager.searchEducation(query);
+    }
+
+    // Skill methods
+    async addSkill(skill: Skill): Promise<void> {
+        return this.skillManager.addSkill(skill);
+    }
+
+    async searchSkills(query: string): Promise<Skill[]> {
+        return this.skillManager.searchSkills(query);
+    }
+
+    // Career Break methods
+    async addCareerBreak(careerBreak: CareerBreak): Promise<void> {
+        return this.careerBreakManager.addCareerBreak(careerBreak);
+    }
+
+    async searchCareerBreaks(query: string): Promise<CareerBreak[]> {
+        return this.careerBreakManager.searchCareerBreaks(query);
+    }
+
+    // Project methods
+    async addProject(project: Project): Promise<void> {
+        return this.projectManager.addProject(project);
+    }
+
+    async searchProjects(query: string): Promise<Project[]> {
+        return this.projectManager.searchProjects(query);
+    }
+
+    // Contribution methods
+    async addContribution(contribution: OnlineContribution): Promise<void> {
+        return this.contributionManager.addOnlineContribution([contribution]).then(() => void 0);
+    }
+
+    async addProfessionalContribution(contribution: ProfessionalContribution): Promise<void> {
+        return this.contributionManager.addProfessionalContribution([contribution]).then(() => void 0);
+    }
+
+    async searchContributions(query: string): Promise<OnlineContribution[]> {
+        return this.contributionManager.searchOnlineContributions(query);
+    }
+
+    async searchProfessionalContributions(query: string): Promise<ProfessionalContribution[]> {
+        return this.contributionManager.searchProfessionalContributions(query);
+    }
+
+    async getContributionById(id: string): Promise<OnlineContribution | undefined> {
+        return this.contributionManager.getOnlineContributionById(id);
+    }
+
+    async getProfessionalContributionById(id: string): Promise<ProfessionalContribution | undefined> {
+        return this.contributionManager.getProfessionalContributionById(id);
+    }
+
+    async updateContribution(id: string, contribution: OnlineContribution): Promise<void> {
+        return this.contributionManager.updateOnlineContribution(id, contribution);
+    }
+
+    async updateProfessionalContribution(id: string, contribution: ProfessionalContribution): Promise<void> {
+        return this.contributionManager.updateProfessionalContribution(id, contribution);
+    }
+
+    async deleteContribution(id: string): Promise<void> {
+        await this.contributionManager.deleteOnlineContribution([id]);
+    }
+
+    async deleteProfessionalContribution(id: string): Promise<void> {
+        await this.contributionManager.deleteProfessionalContribution([id]);
+    }
+
+    async filterContributions(filters: { type?: string; dateRange?: { startDate: string; endDate: string } }): Promise<OnlineContribution[]> {
+        if (filters.type)
+        {
+            return this.contributionManager.searchOnlineContributions(filters.type);
+        }
+        // TODO: Implement date range filtering
+        return [];
+    }
+
+    private generateId(title: string): string {
+        return title.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    }
+
+    // Certification methods
+    async addCertification(certification: LicenseOrCertification): Promise<void> {
+        return this.certificationManager.addCertification(certification);
+    }
+
+    async searchCertifications(query: string): Promise<LicenseOrCertification[]> {
+        return this.certificationManager.searchCertifications(query);
+    }
+
+    // Organization methods
+    async addOrganization(organization: Organization): Promise<void> {
+        return this.organizationManager.addOrganization(organization);
+    }
+
+    async searchOrganizations(query: string): Promise<Organization[]> {
+        return this.organizationManager.searchOrganizations(query);
+    }
+
+    // Course methods
+    async addCourse(course: Course): Promise<void> {
+        return this.courseManager.addCourse(course);
+    }
+
+    async searchCourses(query: string): Promise<Course[]> {
+        return this.courseManager.searchCourses(query);
+    }
+
+    // Reference methods
+    async addReference(reference: Reference): Promise<void> {
+        return this.referenceManager.addReference(reference);
+    }
+
+    async searchReferences(query: string): Promise<Reference[]> {
+        return this.referenceManager.searchReferences(query);
+    }
+
+    // Honor methods
+    async addHonor(honor: HonorOrAward): Promise<void> {
+        return this.honorManager.addHonor(honor);
+    }
+
+    async searchHonors(query: string): Promise<HonorOrAward[]> {
+        return this.honorManager.searchHonors(query);
+    }
+
+    // Achievement methods
     async addAchievement(achievement: Achievement): Promise<void> {
         try
         {
@@ -72,7 +302,7 @@ export class KnowledgeGraphManager {
         return this.achievementManager.searchAchievements(searchTerms);
     }
 
-    // Methods for technical implementations
+    // Technical Implementation methods
     async addTechnicalImplementation(implementation: TechnicalImplementation): Promise<void> {
         try
         {
@@ -94,7 +324,7 @@ export class KnowledgeGraphManager {
         return this.technicalImplementationManager.searchImplementations(query);
     }
 
-    // Methods for domain expertise
+    // Domain Expertise methods
     async addDomainExpertise(expertise: DomainExpertise): Promise<void> {
         try
         {
@@ -132,71 +362,6 @@ export class KnowledgeGraphManager {
         }
     }
 
-    // Methods for professional contributions
-    async addProfessionalContribution(contribution: ProfessionalContribution): Promise<void> {
-        try
-        {
-            await this.graph.createEntities([{
-                name: contribution.title,
-                entityType: 'ProfessionalContribution',
-                observations: [contribution.description],
-                metadata: {
-                    description: contribution.description
-                }
-            }]);
-        } catch (error)
-        {
-            throw new Error(`Failed to add contribution: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
-    }
-
-    async searchProfessionalContributions(query: string): Promise<ProfessionalContribution[]> {
-        return this.professionalContributionManager.searchContributions(query);
-    }
-
-    async search(query: string, filters?: SearchFilter): Promise<SearchResult[]> {
-        try
-        {
-            const results = await this.searchManager.searchAcrossEntities(query);
-            return await this.applyFilters(results, filters);
-        } catch (error)
-        {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            throw new Error(`Search failed: ${errorMessage}`);
-        }
-    }
-
-    async searchByTechnology(technology: string, filters?: SearchFilter): Promise<SearchResult[]> {
-        try
-        {
-            const results = await this.searchManager.searchByTechnology(technology);
-            return await this.applyFilters(results, filters);
-        } catch (error)
-        {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            throw new Error(`Technology search failed: ${errorMessage}`);
-        }
-    }
-
-    async searchByImpactLevel(level: ImpactLevel, businessValues?: BusinessValue[]): Promise<SearchResult[]> {
-        try
-        {
-            const results = await this.searchManager.searchByImpactLevel(level);
-            if (businessValues?.length)
-            {
-                return results.filter(result =>
-                    this.isAchievement(result.item) &&
-                    this.matchesBusinessValues(result.item, businessValues)
-                );
-            }
-            return results;
-        } catch (error)
-        {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            throw new Error(`Impact level search failed: ${errorMessage}`);
-        }
-    }
-
     // Type guards
     private isAchievement(item: unknown): item is Achievement {
         return (item as Achievement).impactLevel !== undefined;
@@ -206,8 +371,8 @@ export class KnowledgeGraphManager {
         return (item as TechnicalImplementation).technologies !== undefined;
     }
 
-    private isDomainExpertise(item: unknown): item is DomainExpertise {
-        return (item as DomainExpertise).domain !== undefined;
+    private isDomainExpertise(item: Achievement | TechnicalImplementation | DomainExpertise | ProfessionalContribution): item is DomainExpertise {
+        return 'domain' in item && 'specializations' in item;
     }
 
     private isProfessionalContribution(item: unknown): item is ProfessionalContribution {
@@ -345,5 +510,183 @@ export class KnowledgeGraphManager {
         if (precedence >= 3) return 'Senior';
         if (precedence >= 2) return 'Mid';
         return 'Junior';
+    }
+
+    // Get methods
+    async getWorkExperienceById(id: string): Promise<WorkExperience | undefined> {
+        return this.workExperienceManager.getExperienceById(id);
+    }
+
+    async getEducationById(id: string): Promise<EducationExperience | undefined> {
+        return this.educationManager.getEducationById(id);
+    }
+
+    async getSkillById(id: string): Promise<Skill | undefined> {
+        return this.skillManager.getSkillById(id);
+    }
+
+    async getCareerBreakById(id: string): Promise<CareerBreak | undefined> {
+        return this.careerBreakManager.getCareerBreakById(id);
+    }
+
+    async getProjectById(id: string): Promise<Project | undefined> {
+        return this.projectManager.getProjectById(id);
+    }
+
+    async getCertificationById(id: string): Promise<LicenseOrCertification | undefined> {
+        return this.certificationManager.getCertificationById(id);
+    }
+
+    async getOrganizationById(id: string): Promise<Organization | undefined> {
+        return this.organizationManager.getOrganizationById(id);
+    }
+
+    async getCourseById(id: string): Promise<Course | undefined> {
+        return this.courseManager.getCourseById(id);
+    }
+
+    async getReferenceById(id: string): Promise<Reference | undefined> {
+        return this.referenceManager.getReferenceById(id);
+    }
+
+    async getHonorById(id: string): Promise<HonorOrAward | undefined> {
+        return this.honorManager.getHonorById(id);
+    }
+
+    // Filter methods
+    async filterWorkExperiences(filters: { dateRange?: { startDate: string; endDate: string }; company?: string; currentOnly?: boolean }): Promise<WorkExperience[]> {
+        const results: WorkExperience[] = [];
+
+        if (filters.dateRange)
+        {
+            const dateFiltered = await this.workExperienceManager.filterByDateRange(
+                filters.dateRange.startDate,
+                filters.dateRange.endDate
+            );
+            results.push(...dateFiltered);
+        }
+
+        if (filters.company)
+        {
+            const companyFiltered = await this.workExperienceManager.filterByCompany(filters.company);
+            results.push(...companyFiltered);
+        }
+
+        if (filters.currentOnly)
+        {
+            const current = await this.workExperienceManager.getCurrentExperience();
+            if (current)
+            {
+                results.push(current);
+            }
+        }
+
+        return results;
+    }
+
+    async filterProjects(filters: { currentOnly?: boolean; associatedWith?: string }): Promise<Project[]> {
+        return this.projectManager.searchProjects(filters.associatedWith || '');
+    }
+
+    async filterCertifications(filters: { issuingOrganization?: string; isValid?: boolean }): Promise<LicenseOrCertification[]> {
+        return this.certificationManager.searchCertifications(filters.issuingOrganization || '');
+    }
+
+    async filterOrganizations(filters: { currentOnly?: boolean; associatedWith?: string }): Promise<Organization[]> {
+        return this.organizationManager.searchOrganizations(filters.associatedWith || '');
+    }
+
+    async filterCourses(filters: { associatedWith?: string }): Promise<Course[]> {
+        return this.courseManager.searchCourses(filters.associatedWith || '');
+    }
+
+    async filterReferences(filters: { organization?: string; relation?: string }): Promise<Reference[]> {
+        return this.referenceManager.searchReferences(filters.organization || filters.relation || '');
+    }
+
+    async filterHonors(filters: { issuer?: string; associatedWith?: string }): Promise<HonorOrAward[]> {
+        return this.honorManager.searchHonors(filters.issuer || filters.associatedWith || '');
+    }
+
+    // Update methods
+    async updateWorkExperience(id: string, experience: WorkExperience): Promise<void> {
+        return this.workExperienceManager.updateExperience(id, experience);
+    }
+
+    async updateEducation(id: string, education: EducationExperience): Promise<void> {
+        return this.educationManager.updateEducation(id, education);
+    }
+
+    async updateSkill(id: string, skill: Skill): Promise<void> {
+        return this.skillManager.updateSkill(id, skill);
+    }
+
+    async updateCareerBreak(id: string, careerBreak: CareerBreak): Promise<void> {
+        return this.careerBreakManager.updateCareerBreak(id, careerBreak);
+    }
+
+    async updateProject(id: string, project: Project): Promise<void> {
+        return this.projectManager.updateProject(id, project);
+    }
+
+    async updateCertification(id: string, certification: LicenseOrCertification): Promise<void> {
+        return this.certificationManager.updateCertification(id, certification);
+    }
+
+    async updateOrganization(id: string, organization: Organization): Promise<void> {
+        return this.organizationManager.updateOrganization(id, organization);
+    }
+
+    async updateCourse(id: string, course: Course): Promise<void> {
+        return this.courseManager.updateCourse(id, course);
+    }
+
+    async updateReference(id: string, reference: Reference): Promise<void> {
+        return this.referenceManager.updateReference(id, reference);
+    }
+
+    async updateHonor(id: string, honor: HonorOrAward): Promise<void> {
+        return this.honorManager.updateHonor(id, honor);
+    }
+
+    // Delete methods
+    async deleteWorkExperience(id: string): Promise<void> {
+        return this.workExperienceManager.deleteExperience(id);
+    }
+
+    async deleteEducation(id: string): Promise<void> {
+        return this.educationManager.deleteEducation(id);
+    }
+
+    async deleteSkill(id: string): Promise<void> {
+        return this.skillManager.deleteSkill(id);
+    }
+
+    async deleteCareerBreak(id: string): Promise<void> {
+        return this.careerBreakManager.deleteCareerBreak(id);
+    }
+
+    async deleteProject(id: string): Promise<void> {
+        return this.projectManager.deleteProject(id);
+    }
+
+    async deleteCertification(id: string): Promise<void> {
+        return this.certificationManager.deleteCertification(id);
+    }
+
+    async deleteOrganization(id: string): Promise<void> {
+        return this.organizationManager.deleteOrganization(id);
+    }
+
+    async deleteCourse(id: string): Promise<void> {
+        return this.courseManager.deleteCourse(id);
+    }
+
+    async deleteReference(id: string): Promise<void> {
+        return this.referenceManager.deleteReference(id);
+    }
+
+    async deleteHonor(id: string): Promise<void> {
+        return this.honorManager.deleteHonor(id);
     }
 }

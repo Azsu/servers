@@ -1,3 +1,42 @@
+/**
+ * @file TechnicalImplementationManager.ts
+ * @description Manages technical implementations and their relationships with technologies and experiences
+ *
+ * @baseClassUsage
+ * - CRUD operations for implementations
+ * - Technology relationship management
+ * - Experience linking
+ * - Search functionality
+ *
+ * @specialization
+ * - Technology stack tracking
+ * - Implementation scope management
+ * - Proficiency level tracking
+ * - Experience validation
+ * - Technology relationship mapping
+ * - Implementation search
+ *
+ * @important
+ * This manager provides implementation functionality:
+ * - Technical implementation tracking
+ * - Technology stack relationships
+ * - Experience associations
+ * - Proficiency management
+ * - Scope tracking
+ *
+ * @usage
+ * // Add implementation
+ * await manager.addImplementation({
+ *   name: "Cloud Architecture",
+ *   technologies: ["AWS", "Kubernetes"],
+ *   proficiencyLevel: "Expert",
+ *   scope: "Enterprise"
+ * }, "exp_123");
+ *
+ * // Search implementations
+ * const results = await manager.searchImplementations("cloud aws");
+ */
+
 import { TechnicalImplementation } from '../types.js';
 import { RelationManager } from './RelationManager.js';
 import { WorkExperienceManager } from './WorkExperienceManager.js';

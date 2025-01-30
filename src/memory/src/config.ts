@@ -3,13 +3,7 @@ import path from 'path';
 
 export const CONFIG = {
   MEMORY: {
-    ENV_VAR: 'MCP_MEMORY_PATH',
-    DEFAULT_PATHS: {
-      WIN32: path.join(process.env.APPDATA || os.homedir(), 'claude-memory', 'memory.jsonl'),
-      DARWIN: path.join(os.homedir(), 'Library', 'Application Support', 'claude-memory', 'memory.jsonl'),
-      LINUX: path.join(os.homedir(), '.local', 'share', 'claude-memory', 'memory.jsonl'),
-    },
-    TEMP_SUFFIX: '.tmp',
+    TEMP_SUFFIX: '.tmp'
   },
   SERVER: {
     NAME: 'memory-server',
@@ -26,25 +20,23 @@ export const CONFIG = {
 } as const;
 
 /**
- * Gets the appropriate memory file path based on platform and environment variables.
- *
- * @returns The full path to the memory file
+ * Gets the path for memory storage based on platform and environment
  */
 export function getMemoryPath(): string {
   // Try environment variable first
-  if (process.env[CONFIG.MEMORY.ENV_VAR])
+  if (process.env.MCP_MEMORY_PATH)
   {
-    return process.env[CONFIG.MEMORY.ENV_VAR] as string;
+    return process.env.MCP_MEMORY_PATH;
   }
 
   // Default paths by platform
   switch (process.platform)
   {
     case 'win32':
-      return CONFIG.MEMORY.DEFAULT_PATHS.WIN32;
+      return path.join(process.env.APPDATA || '', 'claude-memory', 'memory.jsonl');
     case 'darwin':
-      return CONFIG.MEMORY.DEFAULT_PATHS.DARWIN;
+      return path.join(os.homedir(), 'Library', 'Application Support', 'claude-memory', 'memory.jsonl');
     default: // linux and others
-      return CONFIG.MEMORY.DEFAULT_PATHS.LINUX;
+      return path.join(os.homedir(), '.local', 'share', 'claude-memory', 'memory.jsonl');
   }
 }
